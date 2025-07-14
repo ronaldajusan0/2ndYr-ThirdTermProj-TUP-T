@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Product</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --primary: #f6f8ff;
+      --accent: #6c63ff;
+      --light: #ffffff;
+      --text: #333;
+      --muted: #777;
+    }
+
+    body {
+      background: var(--primary);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .form-card {
+      background: var(--light);
+      border-radius: 14px;
+      padding: 30px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: var(--accent);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1.5px solid #ccc;
+      background: #f9f9f9;
+      transition: border 0.2s;
+      font-size: 14px;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      background: #fff;
+      outline: none;
+    }
+
+    .full-width {
+      grid-column: span 2;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 20px;
+      background: var(--accent);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #574ee0;
+    }
+
+    #status {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: bold;
+      color: #28a745;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .full-width {
+        grid-column: span 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-card">
+    <h1>Edit Product</h1>
+    <form id="editForm" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div>
+          <label for="name">Name</label>
+          <input type="text" name="name" required />
+        </div>
+        <div>
+          <label for="brand">Brand</label>
+          <input type="text" name="brand" required />
+        </div>
+        <div>
+          <label for="price">Price</label>
+          <input type="number" name="price" required />
+        </div>
+        <div>
+          <label for="ram">RAM</label>
+          <input type="text" name="ram" required />
+        </div>
+        <div>
+          <label for="storage">Storage</label>
+          <input type="text" name="storage" required />
+        </div>
+        <div>
+          <label for="availability">Availability</label>
+          <select name="availability" required>
+            <option value="1">Available</option>
+            <option value="0">Unavailable</option>
+          </select>
+        </div>
+        <div class="full-width">
+          <label for="images">Upload New Images (Optional)</label>
+          <input type="file" name="images" accept="image/*" multiple />
+        </div>
+        <div class="full-width">
+          <label for="quantity">Quantity</label>
+          <input type="number" name="quantity" required />
+        </div>
+        <div class="full-width">
+          <label for="mainPhoto">Main Photo Index (1 for first image)</label>
+          <input type="number" name="mainPhoto" min="1" value="1" />
+        </div>
+      </div>
+      <button type="submit">Update Product</button>
+    </form>
+    <p id="status"></p>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
+
+    async function loadProduct() {
+      const res = await fetch(`/api/products`);
+      const products = await res.json();
+      const product = products.find(p => p.productID == productId);
+      if (!product) return;
+
+      document.querySelector('[name="name"]').value = product.name;
+      document.querySelector('[name="brand"]').value = product.brand;
+      document.querySelector('[name="price"]').value = product.price;
+      document.querySelector('[name="ram"]').value = product.ram;
+      document.querySelector('[name="storage"]').value = product.storage;
+      document.querySelector('[name="quantity"]').value = product.quantity;
+      document.querySelector('[name="availability"]').value = product.availability;
+      document.querySelector('[name="mainPhoto"]').value = product.mainPhoto || 1;
+    }
+
+    loadProduct();
+
+    document.getElementById('editForm').onsubmit = async function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+
+  console.log("productId:", productId); // Debug log
+  const res = await fetch(`/api/products/${productId}`, {
+  method: "POST",
+  body: formData
+  });
+
+  const result = await res.json();
+  const status = document.getElementById('status');
+  status.textContent = result.message || result.error || "Product updated!";
+  status.style.color = res.ok ? "#28a745" : "red";
+};
+  </script>
+
+
+</body>
+</html>

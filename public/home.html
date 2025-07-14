@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Home | ProductApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #f0f4ff;
+      --card: #fff;
+      --accent: #6c63ff;
+      --text: #222;
+      --muted: #666;
+      --danger: #e74c3c;
+    }
+
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: var(--accent);
+    }
+
+    .product-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .product-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+
+    .product-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .product-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+
+    .product-card h3 {
+      margin: 10px 0 4px;
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    .product-card p {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 4px 0;
+    }
+
+    .actions {
+      margin-top: 10px;
+    }
+
+    .add-to-cart {
+      background-color: var(--accent);
+      color: #fff;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .add-to-cart:hover {
+      background-color: #574ee0;
+    }
+
+    #status {
+      text-align: center;
+      margin-top: 20px;
+      font-weight: bold;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div id="header-container"></div>
+
+  <h1>Welcome to ProductApp 🛍️</h1>
+  <div id="productList" class="product-list"></div>
+  <p id="status"></p>
+
+  <script>
+    async function loadProducts() {
+      const productList = document.getElementById("productList");
+      const status = document.getElementById("status");
+      productList.innerHTML = "<p>Loading...</p>";
+
+      try {
+        const res = await fetch("/api/products");
+        const products = await res.json();
+
+        if (!products.length) {
+          productList.innerHTML = "<p>No products available.</p>";
+          return;
+        }
+
+        productList.innerHTML = "";
+
+        products.forEach(product => {
+          const card = document.createElement("div");
+          card.className = "product-card";
+
+          let mainImage = "https://via.placeholder.com/240x160?text=No+Image";
+          if (product.images?.length > 0) {
+            const main = product.images.find(img => img.isMain == 1);
+            mainImage = main ? `/uploads/${main.filename}` : `/uploads/${product.images[0].filename}`;
+          }
+
+          card.innerHTML = `
+            <img src="${mainImage}" alt="${product.name}" />
+            <h3>${product.name}</h3>
+            <p><strong>Brand:</strong> ${product.brand}</p>
+            <p><strong>Price:</strong> ₱${product.price}</p>
+            <p><strong>RAM:</strong> ${product.ram}</p>
+            <p><strong>Storage:</strong> ${product.storage}</p>
+            <p><strong>Status:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</p>
+            <div class="actions">
+              <button class="add-to-cart" onclick="addToCart(${product.productID})">Add to Cart 🛒</button>
+            </div>
+          `;
+
+          productList.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Failed to load products.";
+      }
+    }
+
+    function addToCart(productId) {
+      alert(`Product ${productId} added to cart! 🛒`);
+      // Optional: store in localStorage or send to backend cart API
+    }
+
+    loadProducts();
+  </script>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $("#header-container").load("header.html");
+  </script>
+</body>
+</html>

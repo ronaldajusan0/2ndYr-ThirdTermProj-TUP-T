@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Product</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    :root {
+      --primary: #f6f8ff;
+      --accent: #6c63ff;
+      --light: #ffffff;
+      --text: #333;
+      --muted: #777;
+    }
+
+    body {
+      background: var(--primary);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    #header-container {
+      width: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+
+    .form-card {
+      background: var(--light);
+      border-radius: 14px;
+      padding: 30px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      margin-top: 120px; /* Pushes form below fixed header */
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: var(--accent);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1.5px solid #ccc;
+      background: #f9f9f9;
+      transition: border 0.2s;
+      font-size: 14px;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      background: #fff;
+      outline: none;
+    }
+
+    .full-width {
+      grid-column: span 2;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 20px;
+      background: var(--accent);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #574ee0;
+    }
+
+    #status {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: bold;
+      color: #28a745;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .full-width {
+        grid-column: span 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ✅ FIXED: header is now correctly inside body -->
+  <div id="header-container"></div>
+
+  <div class="form-card">
+    <h1>Create Product</h1>
+    <form id="productForm" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div>
+          <label for="name">Name</label>
+          <input type="text" name="name" required />
+        </div>
+        <div>
+          <label for="brand">Brand</label>
+          <input type="text" name="brand" required />
+        </div>
+        <div>
+          <label for="price">Price</label>
+          <input type="number" name="price" required />
+        </div>
+        <div>
+          <label for="ram">RAM</label>
+          <input type="text" name="ram" required />
+        </div>
+        <div>
+          <label for="storage">Storage</label>
+          <input type="text" name="storage" required />
+        </div>
+        <div>
+          <label for="availability">Availability</label>
+          <select name="availability" required>
+            <option value="1">Available</option>
+            <option value="0">Unavailable</option>
+          </select>
+        </div>
+        <div class="full-width">
+          <label for="images">Choose Product Images</label>
+          <input type="file" name="images" accept="image/*" multiple required />
+        </div>
+        <div class="full-width">
+          <label for="mainPhoto">Main Photo Index (e.g. 1 for first)</label>
+          <input type="number" name="mainPhoto" min="1" required />
+        </div>
+        <div class="full-width">
+          <label for="quantity">Quantity</label>
+          <input type="number" name="quantity" required />
+        </div>
+      </div>
+      <button type="submit">Submit Product</button>
+    </form>
+    <p id="status"></p>
+  </div>
+
+  <script>
+    const form = document.getElementById("productForm");
+    const status = document.getElementById("status");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch("/api/products", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await res.json();
+
+        if (res.ok) {
+          window.location.href = "/viewproduct.html";
+        } else {
+          status.textContent = result.message || "Error creating product.";
+          status.style.color = "red";
+        }
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Server error. Please try again.";
+        status.style.color = "red";
+      }
+    });
+  </script>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $("#header-container").load("header.html");
+  </script>
+
+  
+</body>
+</html>
