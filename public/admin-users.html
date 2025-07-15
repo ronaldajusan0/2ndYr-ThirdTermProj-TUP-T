@@ -5,19 +5,36 @@
   <title>Admin - User Management</title>
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
   <style>
-    body { font-family: Arial; margin: 20px; }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6fc; }
+    h1 { color: #333; }
     table { width: 100%; }
-    button { margin: 2px; padding: 5px 10px; }
+    button {
+      margin: 2px;
+      padding: 5px 10px;
+      background-color: #6c63ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #574ee0;
+    }
   </style>
 </head>
 <body>
 
-  <h1>User Management</h1>
+  <h1>User Management (Admin Panel)</h1>
   <table id="userTable" class="display">
     <thead>
       <tr>
-        <th>Name</th><th>Age</th><th>Email</th><th>Contact</th>
-        <th>Status</th><th>Role</th><th>Actions</th>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Email</th>
+        <th>Contact</th>
+        <th>Status</th>
+        <th>Role</th>
+        <th>Actions</th>
       </tr>
     </thead>
   </table>
@@ -25,9 +42,25 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script>
-    $(document).ready(function() {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    // Restrict to admin only
+    if (!token || role !== "admin") {
+      alert("Access denied. Admins only.");
+      window.location.href = "/login.html";
+    }
+
+    $(document).ready(function () {
       $('#userTable').DataTable({
-        ajax: '/api/users',
+        ajax: {
+          url: '/api/users',
+          type: 'GET',
+          headers: {
+            Authorization: "Bearer " + token
+          },
+          dataSrc: ''
+        },
         columns: [
           { data: 'name' },
           { data: 'age' },
@@ -47,27 +80,35 @@
     });
 
     function changeRole(id) {
-      const role = prompt("Enter new role (admin/user):");
+      const role = prompt("Enter new role (admin/user/moderator):");
       if (!role) return;
+
       $.ajax({
         url: `/api/users/${id}/role`,
         method: "PUT",
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        },
         contentType: "application/json",
         data: JSON.stringify({ role }),
         success: () => location.reload(),
-        error: () => alert("Failed to update role")
+        error: (xhr) => alert(xhr.responseJSON?.message || "Failed to update role")
       });
     }
 
     function toggleStatus(id) {
-      const status = confirm("Set as active?") ? 'active' : 'inactive';
+      const status = confirm("Activate this user?") ? 'active' : 'inactive';
+
       $.ajax({
         url: `/api/users/${id}/status`,
         method: "PUT",
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        },
         contentType: "application/json",
         data: JSON.stringify({ status }),
         success: () => location.reload(),
-        error: () => alert("Failed to toggle status")
+        error: () => alert("Failed to update status")
       });
     }
   </script>

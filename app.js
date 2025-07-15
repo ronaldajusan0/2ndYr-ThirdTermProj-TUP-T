@@ -16,6 +16,8 @@ app.use(express.json());
 // Serve static files
 app.use(express.static("public"));
 app.use("/uploads", express.static("uploads"));
+app.use(express.urlencoded({ extended: true })); // needed for form parsing
+
 
 // ✅ Serve landing page first
 app.get("/api", (req, res) => {

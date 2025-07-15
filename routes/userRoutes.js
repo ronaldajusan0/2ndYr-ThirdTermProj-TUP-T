@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 const userController = require("../controllers/userController");
+const { isAdmin } = require("../middleware/auth");
 
 // Register user with profile picture upload
 router.post("/register", upload.single("profilePic"), userController.registerUser);
@@ -12,7 +13,7 @@ router.post("/login", userController.loginUser);
 
 // Admin features
 router.get("/users", userController.getAllUsers);
-router.patch("/users/:userID/role", userController.updateUserRole);
+router.put("/users/:userID/role", isAdmin, userController.updateUserRole);
 router.patch("/users/:userID/status", userController.toggleUserStatus);
 
 module.exports = router;
