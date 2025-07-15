@@ -1,0 +1,56 @@
+<table id="userTable">
+  <thead>
+    <tr>
+      <th>ID</th><th>Name</th><th>Email</th><th>Contact</th><th>Role</th><th>Status</th><th>Actions</th>
+    </tr>
+  </thead>
+</table>
+
+<script>
+$(document).ready(() => {
+  $.get("/api/users", function (data) {
+    $('#userTable').DataTable({
+      data,
+      columns: [
+        { data: "userID" },
+        { data: "name" },
+        { data: "email" },
+        { data: "contactNumber" },
+        { data: "role" },
+        { data: "status" },
+        {
+          data: null,
+          render: function (row) {
+            return `
+              <button onclick="changeRole(${row.userID}, '${row.role}')">Change Role</button>
+              <button onclick="toggleStatus(${row.userID}, '${row.status}')">Toggle Status</button>
+            `;
+          }
+        }
+      ]
+    });
+  });
+});
+
+function changeRole(userID, currentRole) {
+  const newRole = currentRole === "admin" ? "user" : "admin";
+  $.ajax({
+    url: `/api/users/${userID}/role`,
+    method: "PUT",
+    contentType: "application/json",
+    data: JSON.stringify({ role: newRole }),
+    success: () => location.reload()
+  });
+}
+
+function toggleStatus(userID, currentStatus) {
+  const newStatus = currentStatus === "active" ? "inactive" : "active";
+  $.ajax({
+    url: `/api/users/${userID}/status`,
+    method: "PUT",
+    contentType: "application/json",
+    data: JSON.stringify({ status: newStatus }),
+    success: () => location.reload()
+  });
+}
+</script>

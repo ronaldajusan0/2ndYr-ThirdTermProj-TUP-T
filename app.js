@@ -1,8 +1,9 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const path = require("path"); // ✅ Needed for correct file paths
+const path = require("path");
 const productRoutes = require("./routes/productRoutes");
+const userRoutes = require("./routes/userRoutes"); // ✅ FIXED
 const connectDB = require("./config/db");
 
 dotenv.config();
@@ -12,16 +13,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from public/
+// Serve static files
 app.use(express.static("public"));
 app.use("/uploads", express.static("uploads"));
 
-// ✅ Serve landing page at /api/
+// ✅ Serve landing page first
 app.get("/api", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "landing.html"));
 });
 
-// Routes
+// ✅ Mount routes
+app.use("/api", userRoutes);
 app.use("/api", productRoutes);
 
 // Start Server

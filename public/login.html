@@ -1,0 +1,23 @@
+<form id="loginForm">
+  <input type="email" name="email" placeholder="Email" required />
+  <input type="password" name="password" placeholder="Password" required />
+  <button type="submit">Login</button>
+</form>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $("#loginForm").on("submit", function (e) {
+    e.preventDefault();
+    $.ajax({
+      url: "/api/login",
+      type: "POST",
+      data: $(this).serialize(),
+      success: (res) => {
+        localStorage.setItem("token", res.token);
+        alert(res.message);
+        // Redirect or show UI based on role
+      },
+      error: (xhr) => alert(xhr.responseJSON?.message || "Login failed")
+    });
+  });
+</script>

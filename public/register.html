@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Registration</title>
+  <style>
+    :root {
+      --primary: #6c63ff;
+      --background: #f4f6fc;
+      --card: #fff;
+      --text: #333;
+      --input-border: #ccc;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--background);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .register-card {
+      background: var(--card);
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .register-card h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: var(--primary);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="password"],
+    input[type="file"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--input-border);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #524ae0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="register-card">
+    <h2>User Registration</h2>
+    <form id="registerForm" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" name="name" required placeholder="Enter your name" />
+      </div>
+      <div class="form-group">
+        <label for="age">Age</label>
+        <input type="number" name="age" required placeholder="Enter your age" />
+      </div>
+      <div class="form-group">
+        <label for="address">Address</label>
+        <input type="text" name="address" required placeholder="Enter your address" />
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" name="email" required placeholder="Enter your email" />
+      </div>
+      <div class="form-group">
+        <label for="contactNumber">Contact Number</label>
+        <input type="text" name="contactNumber" required placeholder="Enter your contact #" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" name="password" required placeholder="Create a password" />
+      </div>
+      <div class="form-group">
+        <label for="profilePic">Profile Picture</label>
+        <input type="file" name="profilePic" required />
+      </div>
+      <button type="submit">Register</button>
+    </form>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $("#registerForm").on("submit", function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+
+      $.ajax({
+        url: "/api/register",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: (res) => {
+          alert(res.message);
+          $("#registerForm")[0].reset();
+        },
+        error: (xhr) => alert(xhr.responseJSON?.error || "Registration failed.")
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - User Management</title>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    table { width: 100%; }
+    button { margin: 2px; padding: 5px 10px; }
+  </style>
+</head>
+<body>
+
+  <h1>User Management</h1>
+  <table id="userTable" class="display">
+    <thead>
+      <tr>
+        <th>Name</th><th>Age</th><th>Email</th><th>Contact</th>
+        <th>Status</th><th>Role</th><th>Actions</th>
+      </tr>
+    </thead>
+  </table>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $('#userTable').DataTable({
+        ajax: '/api/users',
+        columns: [
+          { data: 'name' },
+          { data: 'age' },
+          { data: 'email' },
+          { data: 'contactNumber' },
+          { data: 'status' },
+          { data: 'role' },
+          {
+            data: 'userID',
+            render: (id, _, row) => `
+              <button onclick="changeRole(${id})">Change Role</button>
+              <button onclick="toggleStatus(${id})">Toggle Status</button>
+            `
+          }
+        ]
+      });
+    });
+
+    function changeRole(id) {
+      const role = prompt("Enter new role (admin/user):");
+      if (!role) return;
+      $.ajax({
+        url: `/api/users/${id}/role`,
+        method: "PUT",
+        contentType: "application/json",
+        data: JSON.stringify({ role }),
+        success: () => location.reload(),
+        error: () => alert("Failed to update role")
+      });
+    }
+
+    function toggleStatus(id) {
+      const status = confirm("Set as active?") ? 'active' : 'inactive';
+      $.ajax({
+        url: `/api/users/${id}/status`,
+        method: "PUT",
+        contentType: "application/json",
+        data: JSON.stringify({ status }),
+        success: () => location.reload(),
+        error: () => alert("Failed to toggle status")
+      });
+    }
+  </script>
+
+</body>
+</html>
