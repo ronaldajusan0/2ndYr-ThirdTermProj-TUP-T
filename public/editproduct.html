@@ -52,7 +52,7 @@
       margin-bottom: 6px;
     }
 
-    input, select {
+    input, select, textarea {
       width: 100%;
       padding: 10px 12px;
       border-radius: 8px;
@@ -62,7 +62,7 @@
       font-size: 14px;
     }
 
-    input:focus, select:focus {
+    input:focus, select:focus, textarea:focus {
       border-color: var(--accent);
       background: #fff;
       outline: none;
@@ -153,6 +153,10 @@
           <label for="mainPhoto">Main Photo Index (1 for first image)</label>
           <input type="number" name="mainPhoto" min="1" value="1" />
         </div>
+        <div class="full-width">
+          <label for="description">Description</label>
+          <textarea name="description" rows="4" required></textarea>
+        </div>
       </div>
       <button type="submit">Update Product</button>
     </form>
@@ -177,36 +181,36 @@
       document.querySelector('[name="quantity"]').value = product.quantity;
       document.querySelector('[name="availability"]').value = product.availability;
       document.querySelector('[name="mainPhoto"]').value = product.mainPhoto || 1;
+      document.querySelector('[name="description"]').value = product.description || "";
     }
 
     loadProduct();
 
     document.getElementById('editForm').onsubmit = async function(e) {
-  e.preventDefault();
-  const formData = new FormData(this);
+      e.preventDefault();
+      const formData = new FormData(this);
 
-  console.log("productId:", productId); // Debug log
-  const res = await fetch(`/api/products/${productId}`, {
-  method: "POST",
-  body: formData
-  });
+      const res = await fetch(`/api/products/${productId}`, {
+        method: "POST",
+        body: formData
+      });
 
-  const result = await res.json();
-  const status = document.getElementById('status');
-  status.textContent = result.message || result.error || "Product updated!";
-  status.style.color = res.ok ? "#28a745" : "red";
-};
+      const result = await res.json();
+      const status = document.getElementById('status');
+      status.textContent = result.message || result.error || "Product updated!";
+      status.style.color = res.ok ? "#28a745" : "red";
+    };
   </script>
 
-<script>
-  // Load header then check role
-  $("#header-container").load("header.html", function () {
-    const role = localStorage.getItem("role");
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $("#header-container").load("header.html", function () {
+      const role = localStorage.getItem("role");
+      if (role === "admin") {
+        document.getElementById("editUsersLink")?.style?.display = "inline-block";
+      }
+    });
+  </script>
 
-    if (role === "admin") {
-      document.getElementById("editUsersLink").style.display = "inline-block";
-    }
-  });
-</script>
 </body>
 </html>

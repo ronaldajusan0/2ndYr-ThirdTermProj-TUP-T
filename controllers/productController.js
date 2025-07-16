@@ -4,12 +4,13 @@ const path = require("path");
 
 exports.createProduct = (req, res) => {
   console.log("FILES:", req.files); // Add this for debugging
-  const { name, brand, price, ram, storage, availability, quantity, mainPhoto } = req.body;
+ const { name, brand, price, ram, storage, availability, quantity, mainPhoto, description } = req.body;
+
   // Save product first
   const isAvailable = Number(availability) === 1 ? 1 : 0;
-  const sql = `INSERT INTO products (name, brand, price, ram, storage, availability, quantity)
-               VALUES (?, ?, ?, ?, ?, ?, ?)`;
-  db.query(sql, [name, brand, price, ram, storage, isAvailable, quantity], (err, result) => {
+  const sql = `INSERT INTO products (name, brand, price, ram, storage, availability, quantity, description)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  db.query(sql, [name, brand, price, ram, storage, isAvailable, quantity, description], (err, result) => {
     if (err) return res.status(500).json({ error: err });
     const productId = result.insertId;
     // Save imagesname
@@ -71,29 +72,30 @@ exports.getProducts = (req, res) => {
 // UPDATE
 exports.updateProduct = (req, res) => {
   const { id } = req.params;
-  const { name, brand, price, ram, storage, availability, quantity, mainPhoto } = req.body;
+  const { name, brand, price, ram, storage, availability, quantity, mainPhoto, description } = req.body;
   const isAvailable = Number(availability) === 1 ? 1 : 0;
-  const sql = `UPDATE products SET name=?, brand=?, price=?, ram=?, storage=?, availability=?, quantity=? WHERE productID=?`;
-  db.query(sql, [name, brand, price, ram, storage, isAvailable, quantity, id], (err, result) => {
+
+  const sql = `UPDATE products SET name=?, brand=?, price=?, ram=?, storage=?, availability=?, quantity=?, description=? WHERE productID=?`;
+  db.query(sql, [name, brand, price, ram, storage, isAvailable, quantity, description, id], (err, result) => {
     if (err) {
-      console.error("Product update error:", err); // Add this line
+      console.error("Product update error:", err);
       return res.status(500).json({ error: err });
     }
 
-    // If new images uploaded, update product_images table
     if (req.files && req.files.length > 0) {
       db.query("DELETE FROM product_images WHERE productID=?", [id], (delErr) => {
         if (delErr) {
-          console.error("Image delete error:", delErr); // Add this line
+          console.error("Image delete error:", delErr);
           return res.status(500).json({ error: delErr });
         }
+
         req.files.forEach((file, idx) => {
           const isMain = (idx + 1) === Number(mainPhoto) ? 1 : 0;
           db.query(
             "INSERT INTO product_images (productID, filename, isMain) VALUES (?, ?, ?)",
             [id, file.filename, isMain],
             (imgErr) => {
-              if (imgErr) console.error("Image insert error:", imgErr); // Add this line
+              if (imgErr) console.error("Image insert error:", imgErr);
             }
           );
         });
@@ -103,6 +105,7 @@ exports.updateProduct = (req, res) => {
     res.json({ message: "Product updated" });
   });
 };
+
 
 
 // DELETE
