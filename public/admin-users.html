@@ -24,7 +24,12 @@
 </head>
 <body>
 
+  <!-- ✅ Header -->
+  <div id="header-container"></div>
+
   <h1>User Management (Admin Panel)</h1>
+
+  <!-- ✅ DataTable -->
   <table id="userTable" class="display">
     <thead>
       <tr>
@@ -39,19 +44,30 @@
     </thead>
   </table>
 
+  <!-- ✅ Scripts -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script>
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-
-    // Restrict to admin only
-    if (!token || role !== "admin") {
-      alert("Access denied. Admins only.");
-      window.location.href = "/login.html";
-    }
-
     $(document).ready(function () {
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+
+      // ❗ Redirect if not admin
+      if (!token || role !== "admin") {
+        alert("Access denied. Admins only.");
+        return window.location.href = "/login.html";
+      }
+
+      // ✅ Load Header and show admin-only link
+      $("#header-container").load("header.html", function () {
+        const role = localStorage.getItem("role");
+        if (role === "admin") {
+          const link = document.getElementById("editUsersLink");
+          if (link) link.style.display = "inline-block";
+        }
+      });
+
+      // ✅ Initialize DataTable
       $('#userTable').DataTable({
         ajax: {
           url: '/api/users',
@@ -68,17 +84,16 @@
           { data: 'contactNumber' },
           { data: 'status' },
           { data: 'role' },
-         {
-  data: 'userID',
-  render: function (id, type, row) {
-    const toggleLabel = row.status === 'active' ? 'Deactivate' : 'Activate';
-    return `
-      <button onclick="changeRole(${id})">Change Role</button>
-      <button onclick="toggleStatus(${id}, '${row.status}')">${toggleLabel}</button>
-    `;
-  }
-}
-
+          {
+            data: 'userID',
+            render: function (id, type, row) {
+              const toggleLabel = row.status === 'active' ? 'Deactivate' : 'Activate';
+              return `
+                <button onclick="changeRole(${id})">Change Role</button>
+                <button onclick="toggleStatus(${id}, '${row.status}')">${toggleLabel}</button>
+              `;
+            }
+          }
         ]
       });
     });
@@ -101,22 +116,20 @@
     }
 
     function toggleStatus(id, currentStatus) {
-  const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
-  $.ajax({
-    url: `/api/users/${id}/status`,
-    method: "PATCH",
-    contentType: "application/json",
-    headers: {
-      Authorization: "Bearer " + localStorage.getItem("token")
-    },
-    data: JSON.stringify({ status: newStatus }),
-    success: () => location.reload(),
-    error: (xhr) => alert(xhr.responseJSON?.message || "Failed to update status")
-  });
-}
-
+      $.ajax({
+        url: `/api/users/${id}/status`,
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token")
+        },
+        contentType: "application/json",
+        data: JSON.stringify({ status: newStatus }),
+        success: () => location.reload(),
+        error: (xhr) => alert(xhr.responseJSON?.message || "Failed to update status")
+      });
+    }
   </script>
-
 </body>
 </html>

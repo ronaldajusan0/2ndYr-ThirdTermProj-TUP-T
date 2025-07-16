@@ -11,12 +11,11 @@
       --accent: #6c63ff;
       --text: #222;
       --muted: #666;
-      --danger: #e74c3c;
     }
 
     body {
       margin: 0;
-      padding: 0px 0px;
+      padding: 0;
       font-family: 'Segoe UI', sans-serif;
       background-color: var(--bg);
     }
@@ -31,6 +30,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 20px;
+      padding: 20px;
     }
 
     .product-card {
@@ -40,6 +40,9 @@
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
       text-align: center;
       transition: transform 0.2s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
     }
 
     .product-card:hover {
@@ -66,24 +69,6 @@
       margin: 4px 0;
     }
 
-    .actions {
-      margin-top: 10px;
-    }
-
-    .add-to-cart {
-      background-color: var(--accent);
-      color: #fff;
-      padding: 10px 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .add-to-cart:hover {
-      background-color: #574ee0;
-    }
-
     #status {
       text-align: center;
       margin-top: 20px;
@@ -93,6 +78,7 @@
   </style>
 </head>
 <body>
+
   <div id="header-container"></div>
 
   <h1>Welcome to ProductApp 🛍️</h1>
@@ -119,6 +105,9 @@
         products.forEach(product => {
           const card = document.createElement("div");
           card.className = "product-card";
+          card.onclick = () => {
+            window.location.href = `/productDescription.html?id=${product.productID}`;
+          };
 
           let mainImage = "https://via.placeholder.com/240x160?text=No+Image";
           if (product.images?.length > 0) {
@@ -134,9 +123,6 @@
             <p><strong>RAM:</strong> ${product.ram}</p>
             <p><strong>Storage:</strong> ${product.storage}</p>
             <p><strong>Status:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</p>
-            <div class="actions">
-              <button class="add-to-cart" onclick="addToCart(${product.productID})">Add to Cart 🛒</button>
-            </div>
           `;
 
           productList.appendChild(card);
@@ -147,32 +133,18 @@
       }
     }
 
-    function addToCart(productId) {
-      alert(`Product ${productId} added to cart! 🛒`);
-      // Optional: store in localStorage or send to backend cart API
-    }
-
     loadProducts();
   </script>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
-    $("#header-container").load("header.html");
+    $("#header-container").load("header.html", function () {
+      const role = localStorage.getItem("role");
+      if (role === "admin") {
+        document.getElementById("editUsersLink")?.style?.display = "inline-block";
+      }
+    });
   </script>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-  // Load header then check role
-  $("#header-container").load("header.html", function () {
-    const role = localStorage.getItem("role");
-
-    if (role === "admin") {
-      document.getElementById("editUsersLink").style.display = "inline-block";
-    }
-  });
-</script>
-
-
 
 </body>
 </html>

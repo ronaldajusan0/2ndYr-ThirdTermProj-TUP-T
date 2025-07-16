@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Product Details</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4ff; padding: 20px; }
+    .product-detail { max-width: 800px; margin: auto; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06); }
+    img { width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; margin-bottom: 20px; }
+    h2 { color: #6c63ff; }
+    .info { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div class="product-detail" id="productDetail"></div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+const productID = urlParams.get("id");
+
+
+    async function fetchProductDetails() {
+      try {
+        const res = await fetch(`/api/products/${productID}`);
+        const product = await res.json();
+
+        const detail = document.getElementById("productDetail");
+
+        let mainImage = "https://via.placeholder.com/400x300?text=No+Image";
+        if (product.images?.length > 0) {
+          const main = product.images.find(img => img.isMain == 1);
+          mainImage = main ? `/uploads/${main.filename}` : `/uploads/${product.images[0].filename}`;
+        }
+
+        detail.innerHTML = `
+          <img src="${mainImage}" alt="${product.name}" />
+          <h2>${product.name}</h2>
+          <div class="info"><strong>Brand:</strong> ${product.brand}</div>
+          <div class="info"><strong>Price:</strong> ₱${product.price}</div>
+          <div class="info"><strong>RAM:</strong> ${product.ram}</div>
+          <div class="info"><strong>Storage:</strong> ${product.storage}</div>
+          <div class="info"><strong>Availability:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</div>
+          <div class="info"><strong>Description:</strong> ${product.description || "N/A"}</div>
+          <div class="info"><strong>Quantity:</strong> ${product.quantity}</div>
+          <div class="info"><strong>Ratings:</strong> ★★★★☆</div>
+          <div class="info"><strong>Feedback:</strong> <em>No reviews yet.</em></div>
+        `;
+      } catch (err) {
+        console.error(err);
+        document.getElementById("productDetail").innerHTML = "<p>Failed to load product details.</p>";
+      }
+    }
+
+    fetchProductDetails();
+  </script>
+</body>
+</html>
