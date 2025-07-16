@@ -38,6 +38,11 @@ exports.loginUser = (req, res) => {
 
     const user = results[0];
 
+    // 🚫 Block login if account is not active
+    if (user.status !== 'active') {
+      return res.status(403).json({ message: "Your account has been deactivated." });
+    }
+
     bcrypt.compare(password, user.password, (err, match) => {
       if (err) return res.status(500).json({ error: err });
       if (!match) return res.status(401).json({ message: "Incorrect password" });
@@ -62,6 +67,7 @@ exports.loginUser = (req, res) => {
     });
   });
 };
+
 
 // ✅ Get All Users (for Admin Panel / DataTable)
 exports.getAllUsers = (req, res) => {
@@ -93,5 +99,32 @@ exports.toggleUserStatus = (req, res) => {
   db.query("UPDATE users SET status = ? WHERE userID = ?", [status, userID], (err) => {
     if (err) return res.status(500).json({ error: err });
     res.json({ message: "User status updated" });
+
+    });   
+};
+
+// ✅ Logout User (Clear Token)
+exports.logoutUser = (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  db.query("SELECT userID FROM users WHERE token = ?", [token], (err, results) => {
+    if (err) return res.status(500).json({ error: err });
+
+    if (results.length === 0) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    const userID = results[0].userID;
+
+    db.query("UPDATE users SET token = NULL WHERE userID = ?", [userID], (err) => {
+      if (err) return res.status(500).json({ error: err });
+      res.json({ message: "Logged out successfully" });
+    });
   });
 };

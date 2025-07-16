@@ -5,6 +5,29 @@
     <a href="home.html">🏠 Home</a>
     <a href="createproduct.html">➕ Create Product</a>
     <a href="viewproduct.html">📋 View Products</a>
+    <a href="admin-users.html" id="editUsersLink" style="display: none;">Edit Users</a>
+    <button onclick="logout()">Logout</button>
+
+<script>
+  function logout() {
+    $.ajax({
+      url: "/api/logout",
+      type: "POST",
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token")
+      },
+      success: () => {
+        localStorage.removeItem("token");
+        alert("You have been logged out");
+        window.location.href = "/login.html"; // or your landing page
+      },
+      error: () => {
+        alert("Logout failed");
+      }
+    });
+  }
+</script>
+
   </div>
 </div>
 

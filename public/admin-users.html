@@ -68,13 +68,17 @@
           { data: 'contactNumber' },
           { data: 'status' },
           { data: 'role' },
-          {
-            data: 'userID',
-            render: (id, _, row) => `
-              <button onclick="changeRole(${id})">Change Role</button>
-              <button onclick="toggleStatus(${id})">Toggle Status</button>
-            `
-          }
+         {
+  data: 'userID',
+  render: function (id, type, row) {
+    const toggleLabel = row.status === 'active' ? 'Deactivate' : 'Activate';
+    return `
+      <button onclick="changeRole(${id})">Change Role</button>
+      <button onclick="toggleStatus(${id}, '${row.status}')">${toggleLabel}</button>
+    `;
+  }
+}
+
         ]
       });
     });
@@ -96,21 +100,22 @@
       });
     }
 
-    function toggleStatus(id) {
-      const status = confirm("Activate this user?") ? 'active' : 'inactive';
+    function toggleStatus(id, currentStatus) {
+  const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
-      $.ajax({
-        url: `/api/users/${id}/status`,
-        method: "PUT",
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token")
-        },
-        contentType: "application/json",
-        data: JSON.stringify({ status }),
-        success: () => location.reload(),
-        error: () => alert("Failed to update status")
-      });
-    }
+  $.ajax({
+    url: `/api/users/${id}/status`,
+    method: "PATCH",
+    contentType: "application/json",
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token")
+    },
+    data: JSON.stringify({ status: newStatus }),
+    success: () => location.reload(),
+    error: (xhr) => alert(xhr.responseJSON?.message || "Failed to update status")
+  });
+}
+
   </script>
 
 </body>

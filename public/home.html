@@ -159,5 +159,20 @@
   <script>
     $("#header-container").load("header.html");
   </script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  // Load header then check role
+  $("#header-container").load("header.html", function () {
+    const role = localStorage.getItem("role");
+
+    if (role === "admin") {
+      document.getElementById("editUsersLink").style.display = "inline-block";
+    }
+  });
+</script>
+
+
+
 </body>
 </html>

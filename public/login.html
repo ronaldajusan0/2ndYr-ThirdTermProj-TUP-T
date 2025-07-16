@@ -75,26 +75,35 @@
 
   <div class="login-card">
     <h2>Login</h2>
+
+    <!-- ✅ Added missing form -->
     <form id="loginForm">
       <input type="email" name="email" placeholder="Email" required />
       <input type="password" name="password" placeholder="Password" required />
       <button type="submit">Login</button>
     </form>
+
     <p id="status"></p>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
-    $("#loginForm").on("submit", function (e) {
+    $("#loginForm").submit(function (e) {
       e.preventDefault();
+
+      const email = $("input[name=email]").val();
+      const password = $("input[name=password]").val();
 
       $.ajax({
         url: "/api/login",
-        type: "POST",
-        data: $(this).serialize(),
-        success: function (res) {
-          localStorage.setItem("token", res.token);
-          alert(res.message);
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ email, password }),
+        success: function (response) {
+          localStorage.setItem("token", response.token);
+          localStorage.setItem("role", response.user.role);
+          localStorage.setItem("name", response.user.name);
+          localStorage.setItem("userID", response.user.userID);
           window.location.href = "/home.html";
         },
         error: function (xhr) {
