@@ -40,7 +40,6 @@
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
       text-align: center;
       transition: transform 0.2s ease;
-      cursor: pointer;
       text-decoration: none;
       color: inherit;
     }
@@ -75,6 +74,21 @@
       font-weight: bold;
       color: red;
     }
+
+    button {
+      margin: 6px 4px 0;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #574ee0;
+    }
   </style>
 </head>
 <body>
@@ -105,9 +119,6 @@
         products.forEach(product => {
           const card = document.createElement("div");
           card.className = "product-card";
-          card.onclick = () => {
-            window.location.href = `/productDescription.html?id=${product.productID}`;
-          };
 
           let mainImage = "https://via.placeholder.com/240x160?text=No+Image";
           if (product.images?.length > 0) {
@@ -123,6 +134,9 @@
             <p><strong>RAM:</strong> ${product.ram}</p>
             <p><strong>Storage:</strong> ${product.storage}</p>
             <p><strong>Status:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</p>
+            <button onclick="addToCart(${product.productID})">Add to Cart</button>
+            <button onclick="viewProduct(${product.productID})">View</button>
+            <button onclick="buyNow(${product.productID})">Buy Now</button>
           `;
 
           productList.appendChild(card);
@@ -133,15 +147,54 @@
       }
     }
 
+    function addToCart(productID) {
+  const userID = localStorage.getItem("userID");
+  if (!userID) {
+    alert("You must be logged in to add to cart.");
+    return;
+  }
+
+  fetch("/api/cart", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ userID, productID, quantity: 1 }),
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to add to cart");
+    return res.json();
+  })
+  .then(() => {
+    alert("Product added to cart!");
+    updateCartIndicator(); // 🔄 update cart indicator in the header
+  })
+  .catch(err => {
+    console.error("Error adding to cart:", err);
+    alert("Failed to add to cart.");
+  });
+}
+
+
+    function viewProduct(productID) {
+      window.location.href = `/productDescription.html?id=${productID}`;
+    }
+
+    function buyNow(productId) {
+      localStorage.setItem("selectedProduct", productId);
+      window.location.href = `/checkout.html?id=${productId}`;
+    }
+
     loadProducts();
   </script>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
+    // Load header then check role
     $("#header-container").load("header.html", function () {
       const role = localStorage.getItem("role");
       if (role === "admin") {
-        document.getElementById("editUsersLink")?.style?.display = "inline-block";
+        document.getElementById("editUsersLink").style.display = "inline-block";
       }
     });
   </script>

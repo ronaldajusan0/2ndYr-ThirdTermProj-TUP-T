@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Cart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #6c63ff;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #6c63ff;
+      color: white;
+    }
+
+    tr:hover {
+      background: #f9f9f9;
+    }
+
+    .qty-input {
+      width: 60px;
+      padding: 6px;
+      text-align: center;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #cc0000;
+    }
+
+    #total {
+      font-weight: bold;
+      font-size: 18px;
+      text-align: right;
+      margin-top: 20px;
+    }
+
+    #checkoutBtn {
+      background-color: #28a745;
+      margin-top: 10px;
+    }
+
+    #checkoutBtn:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛒 My Cart</h1>
+  <div id="cartContainer"></div>
+  <p id="total"></p>
+  <div style="text-align: right;">
+    <button id="checkoutBtn" class="btn">Proceed to Checkout</button>
+  </div>
+
+  <script>
+    async function loadCart() {
+      const userID = localStorage.getItem("userID");
+      if (!userID) return alert("You are not logged in!");
+
+      const res = await fetch(`/api/cart/${userID}/`);
+      const data = await res.json();
+      const { items, totalAmount } = data;
+
+      if (!items.length) {
+        document.getElementById("cartContainer").innerHTML = "<p>Your cart is empty.</p>";
+        document.getElementById("total").textContent = "";
+        return;
+      }
+
+      let html = `
+        <table>
+          <tr>
+            <th>Name</th>
+            <th>Brand</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Subtotal</th>
+            <th>Action</th>
+          </tr>
+      `;
+
+      items.forEach(p => {
+        html += `
+          <tr>
+            <td>${p.name}</td>
+            <td>${p.brand}</td>
+            <td>₱${p.price}</td>
+            <td>
+              <input type="number" class="qty-input" min="1" value="${p.quantity}"
+                onchange="updateQty(${p.cartID}, ${p.productID}, this.value)" />
+            </td>
+            <td>₱${(p.totalItem).toFixed(2)}</td>
+            <td><button class="btn" onclick="removeItem(${p.cartID})">Remove</button></td>
+          </tr>
+        `;
+      });
+
+      html += "</table>";
+      document.getElementById("cartContainer").innerHTML = html;
+      document.getElementById("total").textContent = "Total: ₱" + totalAmount.toFixed(2);
+    }
+
+    function updateQty(cartID, productID, newQty) {
+      fetch('/api/cart/update', {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cartID, quantity: Number(newQty) })
+      })
+      .then(res => res.json())
+      .then(() => loadCart())
+      .catch(err => console.error(err));
+    }
+
+    function removeItem(cartID) {
+      fetch(`/api/cart/delete/${cartID}`, {
+        method: "DELETE"
+      })
+      .then(() => loadCart())
+      .catch(err => console.error(err));
+    }
+
+    document.getElementById("checkoutBtn").addEventListener("click", () => {
+      const userID = localStorage.getItem("userID");
+      if (!userID) return alert("Please log in to checkout.");
+      window.location.href = `/checkout.html?userID=${userID}`;
+    });
+
+    loadCart();
+  </script>
+</body>
+</html>

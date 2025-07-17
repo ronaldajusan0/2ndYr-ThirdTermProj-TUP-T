@@ -3,9 +3,11 @@
   <div class="logo">📦 BetlogProductApp</div>
   <div class="nav-links">
     <a href="home.html">🏠 Home</a>
+    <a href="cart.html">🛒 Cart <span id="cart-count">(0)</span></a>
     <a href="createproduct.html">➕ Create Product</a>
     <a href="viewproduct.html">📋 View Products</a>
     <a href="admin-users.html" id="editUsersLink" style="display: none;">Edit Users</a>
+  
     <button onclick="logout()">Logout</button>
 
 <script>
@@ -26,6 +28,22 @@
       }
     });
   }
+</script>
+<script>
+  function updateCartIndicator() {
+    const userID = localStorage.getItem("userID");
+    if (!userID) return;
+
+    fetch(`/api/cart/${userID}`)
+      .then(res => res.json())
+      .then(data => {
+        const count = data.items.reduce((acc, item) => acc + item.quantity, 0);
+        document.getElementById("cart-count").textContent = `(${count})`;
+      });
+  }
+
+  // Call it on page load
+  updateCartIndicator();
 </script>
 
   </div>

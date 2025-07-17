@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Checkout</title>
+  <style>
+    body { font-family: 'Segoe UI'; padding: 20px; background: #f0f4ff; }
+    h1 { color: #6c63ff; text-align: center; }
+    .section {
+      background: #fff; padding: 20px; border-radius: 10px;
+      margin-bottom: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid #ccc; text-align: left; }
+    button {
+      padding: 10px 16px; background: #6c63ff;
+      color: white; border: none; border-radius: 6px; cursor: pointer;
+    }
+    #userInfo p { margin: 4px 0; }
+    .edit-btn {
+      background-color: #ff9800;
+      margin-left: 10px;
+    }
+    .edit-btn:hover {
+      background-color: #e68900;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧾 Checkout</h1>
+
+  <div class="section" id="cartSummary">
+    <h2>Cart Summary</h2>
+    <div id="cartItems"></div>
+    <p id="checkoutTotal"></p>
+  </div>
+
+  <div class="section" id="userDetails">
+    <h2>Customer Information</h2>
+    <div id="userInfo"></div>
+    <button class="edit-btn" onclick="window.location.href='editProfile.html'">Edit Info</button>
+  </div>
+
+  <div class="section">
+    <h2>Payment Method</h2>
+    <label><input type="radio" name="paymentMethod" value="cod" checked> Cash on Delivery (COD)</label><br>
+    <label><input type="radio" name="paymentMethod" value="online"> Online Payment</label>
+  </div>
+
+
+  <div style="text-align: center;">
+    <button onclick="confirmCheckout()">Confirm Purchase</button>
+  </div>
+
+  <script>
+    async function loadCheckout() {
+      const userID = localStorage.getItem("userID");
+      if (!userID) return alert("You are not logged in.");
+
+      // Fetch Cart
+      const cartRes = await fetch(`/api/cart/${userID}`);
+      const cartData = await cartRes.json();
+      const { items, totalAmount } = cartData;
+
+      if (!items.length) {
+        document.getElementById("cartItems").innerHTML = "<p>Your cart is empty.</p>";
+        return;
+      }
+
+      let html = `<table><tr><th>Name</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr>`;
+      items.forEach(item => {
+        html += `
+          <tr>
+            <td>${item.name}</td>
+            <td>₱${item.price}</td>
+            <td>${item.quantity}</td>
+            <td>₱${(item.totalItem).toFixed(2)}</td>
+          </tr>`;
+      });
+      html += `</table>`;
+      document.getElementById("cartItems").innerHTML = html;
+      document.getElementById("checkoutTotal").innerText = "Total: ₱" + totalAmount.toFixed(2);
+
+      // Fetch User Info
+      const userRes = await fetch(`/api/users/${userID}`);
+      if (userRes.ok) {
+        const user = await userRes.json();
+        document.getElementById("userInfo").innerHTML = `
+          <p><strong>Name:</strong> ${user.name}</p>
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p><strong>Contact:</strong> ${user.contactNumber}</p>
+          <p><strong>Address:</strong> ${user.address}</p>
+        `;
+        document.getElementById("addressDisplay").textContent = user.address || "No address on file.";
+      } else {
+        document.getElementById("userInfo").innerHTML = "<p>Unable to load user info.</p>";
+        document.getElementById("addressDisplay").textContent = "";
+      }
+    }
+
+    function confirmCheckout() {
+      const method = document.querySelector('input[name="paymentMethod"]:checked').value;
+      const address = document.getElementById("addressDisplay").textContent.trim();
+
+      if (!address) {
+        alert("No address found. Please update your profile.");
+        return;
+      }
+
+      const confirmOrder = confirm(
+        `You selected "${method.toUpperCase()}" and will ship to this address:\n\n${address}\n\nDo you want to place the order?`
+      );
+
+      if (confirmOrder) {
+        // TODO: Place order logic or API call here
+        alert("Thank you! Your order has been placed.");
+        window.location.href = "/home.html";
+      }
+    }
+
+    loadCheckout();
+  </script>
+
+</body>
+</html>

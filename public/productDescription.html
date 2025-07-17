@@ -5,11 +5,50 @@
   <title>Product Details</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f0f4ff; padding: 20px; }
-    .product-detail { max-width: 800px; margin: auto; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06); }
-    img { width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; margin-bottom: 20px; }
-    h2 { color: #6c63ff; }
-    .info { margin-bottom: 10px; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      padding: 20px;
+    }
+    .product-detail {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    }
+    img {
+      width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #6c63ff;
+    }
+    .info {
+      margin-bottom: 10px;
+    }
+    .button-group {
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+    }
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      color: #fff;
+      background: #6c63ff;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #574ee0;
+    }
   </style>
 </head>
 <body>
@@ -17,13 +56,15 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-const productID = urlParams.get("id");
+    const productID = urlParams.get("id");
 
+    let currentProduct = null;
 
     async function fetchProductDetails() {
       try {
         const res = await fetch(`/api/products/${productID}`);
         const product = await res.json();
+        currentProduct = product;
 
         const detail = document.getElementById("productDetail");
 
@@ -45,11 +86,32 @@ const productID = urlParams.get("id");
           <div class="info"><strong>Quantity:</strong> ${product.quantity}</div>
           <div class="info"><strong>Ratings:</strong> ★★★★☆</div>
           <div class="info"><strong>Feedback:</strong> <em>No reviews yet.</em></div>
+          <div class="button-group">
+            <button onclick="addToCart(${product.productID})">Add to Cart</button>
+            <button onclick="buyNow(${product.productID})">Buy Now</button>
+          </div>
         `;
       } catch (err) {
         console.error(err);
         document.getElementById("productDetail").innerHTML = "<p>Failed to load product details.</p>";
       }
+    }
+
+    function addToCart(productId) {
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const exists = cart.find(item => item.productID === productId);
+      if (!exists) {
+        cart.push({ productID: productId, quantity: 1 });
+        localStorage.setItem("cart", JSON.stringify(cart));
+        alert("Product added to cart!");
+      } else {
+        alert("Product is already in cart.");
+      }
+    }
+
+    function buyNow(productId) {
+      localStorage.setItem("selectedProduct", productId);
+      window.location.href = `/checkout.html?id=${productId}`;
     }
 
     fetchProductDetails();
