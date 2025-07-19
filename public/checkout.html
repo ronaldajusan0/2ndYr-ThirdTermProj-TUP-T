@@ -99,25 +99,53 @@
       }
     }
 
-    function confirmCheckout() {
-      const method = document.querySelector('input[name="paymentMethod"]:checked').value;
-      const address = document.getElementById("addressDisplay").textContent.trim();
+    async function confirmCheckout() {
+  const userID = localStorage.getItem("userID");
+  if (!userID) return alert("You are not logged in.");
 
-      if (!address) {
-        alert("No address found. Please update your profile.");
-        return;
-      }
+  const method = document.querySelector('input[name="paymentMethod"]:checked').value;
 
-      const confirmOrder = confirm(
-        `You selected "${method.toUpperCase()}" and will ship to this address:\n\n${address}\n\nDo you want to place the order?`
-      );
+  // Fetch user details
+  const userRes = await fetch(`/api/users/${userID}`);
+  if (!userRes.ok) return alert("Unable to fetch user details.");
+  const user = await userRes.json();
 
-      if (confirmOrder) {
-        // TODO: Place order logic or API call here
-        alert("Thank you! Your order has been placed.");
-        window.location.href = "/home.html";
-      }
-    }
+  if (!user.address) {
+    alert("No address found. Please update your profile.");
+    return;
+  }
+
+  // Fetch cart items
+  const cartRes = await fetch(`/api/cart/${userID}`);
+  if (!cartRes.ok) return alert("Unable to fetch cart items.");
+  const cart = await cartRes.json();
+
+  const confirmOrder = confirm(
+    `You selected "${method.toUpperCase()}" and will ship to this address:\n\n${user.address}\n\nDo you want to place the order?`
+  );
+  if (!confirmOrder) return;
+
+  // Send order to backend
+  const res = await fetch('/api/orders/create', {
+    method: 'POST',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userID,
+      paymentMethod: method,
+      address: user.address,
+      items: cart.items,
+      userEmail: user.email
+    })
+  });
+
+  const result = await res.json();
+  if (result.success) {
+    window.location.href = `/receipt.html?orderID=${result.orderID}`;
+  } else {
+    alert("Failed to place order.");
+  }
+}
+
 
     loadCheckout();
   </script>

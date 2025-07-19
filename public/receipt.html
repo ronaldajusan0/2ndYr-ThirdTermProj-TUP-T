@@ -1,0 +1,66 @@
+<!-- Display Order Details + Buttons -->
+<div>
+  <div id="receiptDetails"></div>
+
+  <button onclick="cancelOrder()">Cancel Delivery</button>
+  <button onclick="completeOrder()">Mark as Received</button>
+</div>
+
+<script>
+async function loadReceipt() {
+  const orderID = new URLSearchParams(location.search).get("orderID");
+  const res = await fetch(`/api/orders/orderinfo/${orderID}`);
+
+  const data = await res.json();
+
+  if (!data || !data.items || !data.items.length) {
+    document.getElementById("receiptDetails").innerHTML = "<p>No order details found.</p>";
+    return;
+  }
+
+  let html = `
+    <h3>Order ID: ${data.orderID}</h3>
+    <p>Status: ${data.status}</p>
+    <p>Shipping Address: ${data.shippingAddress}</p>
+    <table border="1" cellpadding="10">
+      <tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+  `;
+
+  let grandTotal = 0;
+
+  data.items.forEach(item => {
+    const subtotal = item.quantity * item.priceAtPurchase;
+    grandTotal += subtotal;
+    html += `
+      <tr>
+        <td>${item.name}</td>
+        <td>${item.quantity}</td>
+        <td>₱${item.priceAtPurchase.toFixed(2)}</td>
+        <td>₱${subtotal.toFixed(2)}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+    <tr><td colspan="3"><strong>Total</strong></td><td><strong>₱${grandTotal.toFixed(2)}</strong></td></tr>
+    </table>
+  `;
+
+  document.getElementById("receiptDetails").innerHTML = html;
+}
+
+
+async function completeOrder() {
+  const orderID = new URLSearchParams(location.search).get("orderID");
+  const email = localStorage.getItem("email");
+
+  await fetch(`/api/orders/${orderID}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: "delivered", email })
+  });
+  alert("Order marked as received. Email sent.");
+}
+
+loadReceipt();
+</script>
