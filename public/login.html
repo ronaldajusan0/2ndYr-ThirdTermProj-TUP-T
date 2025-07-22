@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f0f4ff;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-card {
+      background: #ffffff;
+      padding: 40px 30px;
+      border-radius: 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-card h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #6c63ff;
+    }
+
+    .login-card input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    .login-card input:focus {
+      border-color: #6c63ff;
+      outline: none;
+    }
+
+    .login-card button {
+      width: 100%;
+      padding: 14px;
+      background: #6c63ff;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .login-card button:hover {
+      background: #574ee0;
+    }
+
+    #status {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: bold;
+      color: red;
+    }
+
+    /* ✅ jQuery Validation Error Styles */
+    .error {
+      color: #dc3545;
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    }
+    
+    input.error {
+      border-color: #dc3545 !important;
+      background-color: #ffe6e6 !important;
+    }
+    
+    input.valid {
+      border-color: #28a745 !important;
+      background-color: #e6ffe6 !important;
+    }
+
+    .register-link {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #ccc;
+    }
+
+    .register-link a {
+      color: #6c63ff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .register-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- Include Header -->
+  <!-- <div id="header-container"></div> -->
+
+  <div class="login-card">
+    <h2>Login</h2>
+
+    <!-- ✅ Added missing form -->
+    <form id="loginForm">
+      <input type="text" name="email" id="email" placeholder="Email (e.g., john123@gmail.com)" required pattern="^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z]+$" />
+      <input type="password" name="password" id="password" placeholder="Password (letters and numbers only)" required pattern="^[a-zA-Z0-9]+$" />
+      <button type="submit">Login</button>
+    </form>
+
+    <p id="status"></p>
+    
+    <div class="register-link">
+      <p>Don't have an account yet? <a href="/register.html">Click here to register</a></p>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/additional-methods.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    // ✅ Load Header (commented out for now)
+    // $(document).ready(function() {
+    //   $("#header-container").load("header.html");
+    // });
+
+    // ✅ jQuery Validation for Login
+    $(document).ready(function() {
+      
+      // Custom validation methods
+      $.validator.addMethod("strictEmail", function(value, element) {
+        // Allow alphabetical characters, numbers, @ and . for email like john123@gmail.com
+        return /^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z]+$/.test(value);
+      }, "Email must contain only letters, numbers, @ and . (e.g., john123@gmail.com)");
+
+      $.validator.addMethod("noSpecialChars", function(value, element) {
+        // No special characters for password, only letters and numbers
+        return /^[a-zA-Z0-9]+$/.test(value);
+      }, "Password can only contain letters and numbers (no special characters)");
+
+      // Initialize validation
+      $("#loginForm").validate({
+        rules: {
+          email: {
+            required: true,
+            strictEmail: true
+          },
+          password: {
+            required: true,
+            minlength: 6,
+            noSpecialChars: true
+          }
+        },
+        messages: {
+          email: {
+            required: "Email address is required",
+            strictEmail: "Email must contain only letters, numbers, @ and . (e.g., john123@gmail.com)"
+          },
+          password: {
+            required: "Password is required",
+            minlength: "Password must be at least 6 characters",
+            noSpecialChars: "Password can only contain letters and numbers (no special characters)"
+          }
+        },
+        errorClass: "error",
+        validClass: "valid",
+        errorPlacement: function(error, element) {
+          error.insertAfter(element);
+        },
+        highlight: function(element) {
+          $(element).addClass("error").removeClass("valid");
+        },
+        unhighlight: function(element) {
+          $(element).removeClass("error").addClass("valid");
+        },
+        submitHandler: function(form) {
+          const email = $("#email").val();
+          const password = $("#password").val();
+
+          // Show loading state
+          const submitBtn = $(form).find('button[type="submit"]');
+          const originalText = submitBtn.text();
+          submitBtn.text('Logging in...').prop('disabled', true);
+
+          $.ajax({
+            url: "/api/login",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ email, password }),
+            success: function (response) {
+              if (response.success) {
+                // ✅ Store in both localStorage and sessionStorage (using same token)
+                localStorage.setItem("jwtToken", response.token);
+                localStorage.setItem("token", response.token);
+                localStorage.setItem("role", response.user.role);
+                localStorage.setItem("name", response.user.name);
+                localStorage.setItem("userID", response.user.userID);
+                
+                 localStorage.setItem("email", response.user.email);
+  sessionStorage.setItem("email", response.user.email);
+
+                // ✅ Store JWT token in sessionStorage as requested
+                sessionStorage.setItem("jwtToken", response.token);
+                sessionStorage.setItem("token", response.token);
+                sessionStorage.setItem("role", response.user.role);
+                sessionStorage.setItem("name", response.user.name);
+                sessionStorage.setItem("userID", response.user.userID);
+                
+                // Show SweetAlert success message
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Login Successful!',
+                  text: `Welcome back, ${response.user.name}!`,
+                  timer: 1500,
+                  timerProgressBar: true,
+                  showConfirmButton: false,
+                  allowOutsideClick: false
+                }).then(() => {
+                  window.location.href = "/home.html";
+                });
+              } else {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Login Failed',
+                  text: response.message || "Login failed",
+                  confirmButtonText: 'Try Again',
+                  confirmButtonColor: '#6c63ff'
+                });
+                submitBtn.text(originalText).prop('disabled', false);
+              }
+            },
+            error: function (xhr) {
+              const errorMessage = xhr.responseJSON?.message || "Login failed";
+              
+              Swal.fire({
+                icon: 'error',
+                title: 'Login Failed',
+                text: errorMessage,
+                confirmButtonText: 'Try Again',
+                confirmButtonColor: '#6c63ff'
+              });
+              
+              submitBtn.text(originalText).prop('disabled', false);
+            }
+          });
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

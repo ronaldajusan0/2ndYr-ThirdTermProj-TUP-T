@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - User Management</title>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6fc; }
+    h1 { color: #333; }
+    table { width: 100%; }
+    button {
+      margin: 2px;
+      padding: 5px 10px;
+      background-color: #6c63ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #574ee0;
+    }
+  </style>
+</head>
+<body style="display: none;">
+  <script>
+    // ✅ IMMEDIATE admin check - runs before anything else loads
+    console.log("🚀 IMMEDIATE admin check starting for admin-users.html...");
+    
+    // Get auth data immediately
+    const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                  sessionStorage.getItem("token") || localStorage.getItem("token");
+    const role = sessionStorage.getItem("role") || localStorage.getItem("role");
+    
+    console.log("Token present:", !!token);
+    console.log("User role:", role);
+    console.log("sessionStorage contents:", {
+      jwtToken: sessionStorage.getItem("jwtToken"),
+      token: sessionStorage.getItem("token"),
+      role: sessionStorage.getItem("role"),
+      name: sessionStorage.getItem("name")
+    });
+    console.log("localStorage contents:", {
+      jwtToken: localStorage.getItem("jwtToken"),
+      token: localStorage.getItem("token"),
+      role: localStorage.getItem("role"),
+      name: localStorage.getItem("name")
+    });
+    
+    // If not admin, redirect immediately
+    if (!token) {
+      console.log("❌ No token - redirecting to login");
+      alert("Please log in to access this page.");
+      window.location.replace("/login.html");
+    } else if (role !== "admin") {
+      console.log("❌ Not admin - redirecting to home");
+      alert(`Access denied. Administrator privileges required.\nYour role: ${role}\n\nRedirecting to home page...`);
+      window.location.replace("/home.html");
+    } else {
+      console.log("✅ Admin access granted - showing page");
+      document.body.style.display = "block";
+    }
+  </script>
+
+  <!-- ✅ Header -->
+  <div id="header-container"></div>
+
+  <h1>User Management (Admin Panel)</h1>
+
+  <!-- ✅ DataTable -->
+  <table id="userTable" class="display">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Email</th>
+        <th>Contact</th>
+        <th>Status</th>
+        <th>Role</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+  </table>
+
+  <!-- ✅ Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    $(document).ready(function () {
+      // Get token for API calls (already authenticated by immediate check above)
+      const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                    sessionStorage.getItem("token") || localStorage.getItem("token");
+
+      // ✅ Load Header and show admin-only link (prioritize jwtToken)
+      $("#header-container").load("header.html", function () {
+        const role = sessionStorage.getItem("role") || localStorage.getItem("role");
+        if (role === "admin") {
+          const editUsersLink = document.getElementById("editUsersLink");
+          const dashboardLink = document.getElementById("dashboardLink");
+          if (editUsersLink) editUsersLink.style.display = "inline-block";
+          if (dashboardLink) dashboardLink.style.display = "inline-block";
+        }
+      });
+
+      // ✅ Initialize DataTable
+      $('#userTable').DataTable({
+        ajax: {
+          url: '/api/users',
+          type: 'GET',
+          headers: {
+            Authorization: "Bearer " + token
+          },
+          dataSrc: ''
+        },
+        columns: [
+          { data: 'name' },
+          { data: 'age' },
+          { data: 'email' },
+          { data: 'contactNumber' },
+          { data: 'status' },
+          { data: 'role' },
+          {
+            data: 'userID',
+            render: function (id, type, row) {
+              const toggleLabel = row.status === 'active' ? 'Deactivate' : 'Activate';
+              return `
+                <button onclick="changeRole(${id})">Change Role</button>
+                <button onclick="toggleStatus(${id}, '${row.status}')">${toggleLabel}</button>
+              `;
+            }
+          }
+        ]
+      });
+    });
+
+    function changeRole(id) {
+      const role = prompt("Enter new role (admin/user/moderator):");
+      if (!role) return;
+
+      // ✅ jQuery Validation for Role Change
+      const validRoles = ['admin', 'user', 'moderator'];
+      if (!validRoles.includes(role.toLowerCase())) {
+        alert("Invalid role! Please enter: admin, user, or moderator");
+        return;
+      }
+
+      const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+      
+      if (!token) {
+        alert("Authentication required. Please log in again.");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      $.ajax({
+        url: `/api/users/${id}/role`,
+        method: "PUT",
+        headers: {
+          Authorization: "Bearer " + token
+        },
+        contentType: "application/json",
+        data: JSON.stringify({ role: role.toLowerCase() }),
+        success: () => {
+          alert("Role updated successfully!");
+          $('#userTable').DataTable().ajax.reload();
+        },
+        error: (xhr) => {
+          if (xhr.status === 401) {
+            alert("Authentication expired. Please log in again.");
+            window.location.href = "/login.html";
+          } else {
+            alert(xhr.responseJSON?.message || "Failed to update role");
+          }
+        }
+      });
+    }
+
+    function toggleStatus(id, currentStatus) {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      const action = newStatus === 'active' ? 'activate' : 'deactivate';
+      
+      // ✅ jQuery Validation with Confirmation
+      if (!confirm(`Are you sure you want to ${action} this user?`)) {
+        return;
+      }
+
+      const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+      
+      if (!token) {
+        alert("Authentication required. Please log in again.");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      $.ajax({
+        url: `/api/users/${id}/status`,
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer " + token
+        },
+        contentType: "application/json",
+        data: JSON.stringify({ status: newStatus }),
+        success: () => {
+          alert(`User ${action}d successfully!`);
+          $('#userTable').DataTable().ajax.reload();
+        },
+        error: (xhr) => {
+          if (xhr.status === 401) {
+            alert("Authentication expired. Please log in again.");
+            window.location.href = "/login.html";
+          } else {
+            alert(xhr.responseJSON?.message || "Failed to update status");
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

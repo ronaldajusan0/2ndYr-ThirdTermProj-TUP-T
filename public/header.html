@@ -1,0 +1,161 @@
+<!-- header.html -->
+<div class="navbar">
+  <div class="logo">📦 BetlogProductApp</div>
+  <div class="nav-links">
+    <a href="home.html">🏠 Home</a>
+    <a href="cart.html">🛒 Cart <span id="cart-count">(0)</span></a>
+    <a href="createproduct.html">➕ Create Product</a>
+    <a href="viewproduct.html">📋 View Products</a>
+    <a href="dashboard.html" id="dashboardLink" style="display: none;">📊 Dashboard</a>
+    <a href="admin-users.html" id="editUsersLink" style="display: none;">👥 Edit Users</a>
+  
+    <button onclick="logout()">Logout</button>
+
+<script>
+  function logout() {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("jwtToken");
+    
+    if (!token) {
+      // If no token, just clear all storage and redirect
+      localStorage.clear();
+      sessionStorage.clear();
+      alert("You have been logged out");
+      window.location.href = "/login.html";
+      return;
+    }
+
+    // Make API call to logout endpoint
+    fetch("/api/logout", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error("Logout failed");
+      }
+    })
+    .then(data => {
+      // ✅ Clear both localStorage and sessionStorage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      if (data.success) {
+        alert(`Goodbye ${data.user?.name || 'User'}! You have been logged out successfully`);
+      } else {
+        alert("You have been logged out successfully");
+      }
+      
+      window.location.href = "/login.html";
+    })
+    .catch(error => {
+      console.error("Logout error:", error);
+      // Even if logout fails, clear all storage and redirect
+      localStorage.clear();
+      sessionStorage.clear();
+      alert("Logged out (session cleared)");
+      window.location.href = "/login.html";
+    });
+  }
+</script>
+<script>
+  function updateCartIndicator() {
+    const userID = localStorage.getItem("userID") || sessionStorage.getItem("userID");
+    const token = localStorage.getItem("jwtToken") || localStorage.getItem("token") || sessionStorage.getItem("jwtToken");
+    
+    if (!userID || !token) {
+      const cartCountElement = document.getElementById("cart-count");
+      if (cartCountElement) {
+        cartCountElement.textContent = "(0)";
+      }
+      return;
+    }
+
+    fetch(`/api/cart/${userID}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (data.success && data.items) {
+          const count = data.items.reduce((acc, item) => acc + item.quantity, 0);
+          const cartCountElement = document.getElementById("cart-count");
+          if (cartCountElement) {
+            cartCountElement.textContent = `(${count})`;
+          }
+        }
+      })
+      .catch(err => {
+        console.error("Error updating cart indicator:", err);
+        const cartCountElement = document.getElementById("cart-count");
+        if (cartCountElement) {
+          cartCountElement.textContent = "(0)";
+        }
+      });
+  }
+
+  // Call it on page load
+  updateCartIndicator();
+</script>
+
+  </div>
+</div>
+
+<style>
+  .navbar {
+    background-color: #6c63ff;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+  }
+
+  .navbar .logo {
+    font-weight: bold;
+    font-size: 20px;
+  }
+
+  .navbar .nav-links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .navbar .nav-links a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+
+  .navbar .nav-links a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 600px) {
+    .navbar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .navbar .nav-links {
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+  }
+</style>

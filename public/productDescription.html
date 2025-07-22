@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Product Details</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      padding: 20px;
+    }
+    .product-detail {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    }
+    img {
+      width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #6c63ff;
+    }
+    .info {
+      margin-bottom: 10px;
+    }
+    .button-group {
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+    }
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      color: #fff;
+      background: #6c63ff;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #574ee0;
+    }
+  </style>
+</head>
+<body>
+  <div class="product-detail" id="productDetail"></div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const productID = urlParams.get("id");
+
+    let currentProduct = null;
+
+    async function fetchProductDetails() {
+      try {
+        const res = await fetch(`/api/products/${productID}`);
+        const product = await res.json();
+        currentProduct = product;
+
+        const detail = document.getElementById("productDetail");
+
+        let mainImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23f5f5f5'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='16' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
+        if (product.images?.length > 0) {
+          const main = product.images.find(img => img.isMain == 1);
+          mainImage = main ? `/uploads/${main.filename}` : `/uploads/${product.images[0].filename}`;
+        }
+
+        detail.innerHTML = `
+          <img src="${mainImage}" alt="${product.name}" />
+          <h2>${product.name}</h2>
+          <div class="info"><strong>Brand:</strong> ${product.brand}</div>
+          <div class="info"><strong>Price:</strong> ₱${product.price}</div>
+          <div class="info"><strong>RAM:</strong> ${product.ram}</div>
+          <div class="info"><strong>Storage:</strong> ${product.storage}</div>
+          <div class="info"><strong>Availability:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</div>
+          <div class="info"><strong>Description:</strong> ${product.description || "N/A"}</div>
+          <div class="info"><strong>Quantity:</strong> ${product.quantity}</div>
+          <div class="info"><strong>Ratings:</strong> ★★★★☆</div>
+          <div class="info"><strong>Feedback:</strong> <em>No reviews yet.</em></div>
+          <div class="button-group">
+            <button onclick="addToCart(${product.productID})">Add to Cart</button>
+            <button onclick="buyNow(${product.productID})">Buy Now</button>
+          </div>
+        `;
+      } catch (err) {
+        console.error(err);
+        document.getElementById("productDetail").innerHTML = "<p>Failed to load product details.</p>";
+      }
+    }
+
+    function addToCart(productId) {
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const exists = cart.find(item => item.productID === productId);
+      if (!exists) {
+        cart.push({ productID: productId, quantity: 1 });
+        localStorage.setItem("cart", JSON.stringify(cart));
+        alert("Product added to cart!");
+      } else {
+        alert("Product is already in cart.");
+      }
+    }
+
+    function buyNow(productId) {
+      localStorage.setItem("selectedProduct", productId);
+      window.location.href = `/checkout.html?id=${productId}`;
+    }
+
+    fetchProductDetails();
+  </script>
+</body>
+</html>

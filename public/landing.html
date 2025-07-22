@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Welcome to ProductApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --accent: #6c63ff;
+      --bg: #f0f4ff;
+      --text: #333;
+      --light: #fff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    header {
+      background: var(--accent);
+      color: white;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+      font-weight: bold;
+    }
+
+    .hero {
+      padding: 80px 20px;
+      text-align: center;
+      background: linear-gradient(145deg, #6c63ff, #887aff);
+      color: white;
+    }
+
+    .hero h2 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+    }
+
+    .hero .buttons a {
+      padding: 12px 24px;
+      margin: 10px;
+      background: white;
+      color: var(--accent);
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: background 0.3s;
+    }
+
+    .hero .buttons a:hover {
+      background: #ddd;
+    }
+
+    section#about {
+      padding: 60px 20px;
+      max-width: 800px;
+      margin: auto;
+      text-align: center;
+    }
+
+    section#about h3 {
+      color: var(--accent);
+      margin-bottom: 20px;
+      font-size: 2rem;
+    }
+
+    footer {
+      background: #333;
+      color: #ccc;
+      text-align: center;
+      padding: 20px;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📦 ProductApp</h1>
+    <nav>
+      <a href="#about">About</a>
+      <a href="login.html">Sign In</a>
+      <a href="signup.html">Sign Up</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h2>Discover & Manage Products with Ease</h2>
+    <p>Your smart catalog for managing and browsing products efficiently.</p>
+    <div class="buttons">
+      <a href="login.html">Get Started</a>
+      <a href="#about">Learn More</a>
+    </div>
+  </div>
+
+  <section id="about">
+    <h3>About ProductApp</h3>
+    <p>
+      ProductApp is a powerful web-based system designed to help administrators and users manage product listings effectively.
+      Whether you're adding a new item, editing details, or browsing through our interactive catalog, we offer a seamless and user-friendly experience.
+      <br /><br />
+      Guests can view available products, and registered users can sign in to access more features like adding to cart or updating listings.
+    </p>
+  </section>
+
+  <footer>
+    &copy; 2025 ProductApp. All rights reserved.
+  </footer>
+
+</body>
+</html>

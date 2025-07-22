@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #f6f8ff;
+      --accent: #6c63ff;
+      --light: #ffffff;
+      --text: #333;
+      --muted: #777;
+      --success: #28a745;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --info: #17a2b8;
+    }
+
+    body {
+      background: var(--primary);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    #header-container {
+      width: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 80px;
+      z-index: 100;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .dashboard-container {
+      margin-top: 100px;
+      padding: 20px;
+      max-width: 1400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+    }
+
+    /* ✅ Statistics Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: var(--light);
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-card .icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+
+    .stat-card .value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .stat-card .label {
+      color: var(--muted);
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-card.users { border-left: 5px solid var(--info); }
+    .stat-card.products { border-left: 5px solid var(--success); }
+    .stat-card.orders { border-left: 5px solid var(--warning); }
+    .stat-card.revenue { border-left: 5px solid var(--accent); }
+
+    /* ✅ Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    .chart-container {
+      background: var(--light);
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-container.full-width {
+      grid-column: span 2;
+    }
+
+    .chart-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--text);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .chart-canvas {
+      max-height: 400px;
+    }
+
+    /* ✅ Tables */
+    .tables-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    .table-container {
+      background: var(--light);
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background: var(--primary);
+      color: var(--text);
+      font-weight: bold;
+    }
+
+    tr:hover {
+      background: #f8f9fa;
+    }
+
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-confirmed { background: #d4edda; color: #155724; }
+    .status-shipped { background: #cce5ff; color: #004085; }
+    .status-delivered { background: #d1ecf1; color: #0c5460; }
+
+    .low-stock {
+      color: var(--danger);
+      font-weight: bold;
+    }
+
+    /* ✅ Loading States */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    /* ✅ Responsive Design */
+    @media (max-width: 768px) {
+      .charts-grid, .tables-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .chart-container.full-width {
+        grid-column: span 1;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+    }
+  </style>
+</head>
+
+<body style="display: none;">
+  <script>
+    // ✅ IMMEDIATE admin check - runs before anything else loads
+    console.log("🚀 IMMEDIATE admin check starting for dashboard.html...");
+    
+    // Get auth data immediately
+    const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                  sessionStorage.getItem("token") || localStorage.getItem("token");
+    const role = sessionStorage.getItem("role") || localStorage.getItem("role");
+    
+    console.log("Token present:", !!token);
+    console.log("User role:", role);
+    
+    // If not admin, redirect immediately
+    if (!token) {
+      console.log("❌ No token - redirecting to login");
+      alert("Please log in to access this page.");
+      window.location.replace("/login.html");
+    } else if (role !== "admin") {
+      console.log("❌ Not admin - redirecting to home");
+      alert(`Access denied. Administrator privileges required.\nYour role: ${role}\n\nRedirecting to home page...`);
+      window.location.replace("/home.html");
+    } else {
+      console.log("✅ Admin access granted - showing page");
+      document.body.style.display = "block";
+    }
+  </script>
+
+  <!-- ✅ Header -->
+  <div id="header-container"></div>
+
+  <div class="dashboard-container">
+    <h1>📊 Admin Dashboard</h1>
+
+    <!-- ✅ Statistics Cards -->
+    <div class="stats-grid">
+      <div class="stat-card users">
+        <div class="icon">👥</div>
+        <div class="value" id="totalUsers">0</div>
+        <div class="label">Total Users</div>
+      </div>
+      <div class="stat-card products">
+        <div class="icon">📱</div>
+        <div class="value" id="totalProducts">0</div>
+        <div class="label">Total Products</div>
+      </div>
+      <div class="stat-card orders">
+        <div class="icon">📦</div>
+        <div class="value" id="totalOrders">0</div>
+        <div class="label">Total Orders</div>
+      </div>
+      <div class="stat-card revenue">
+        <div class="icon">💰</div>
+        <div class="value" id="totalRevenue">₱0</div>
+        <div class="label">Total Revenue</div>
+      </div>
+    </div>
+
+    <!-- ✅ Charts Section -->
+    <div class="charts-grid">
+      <!-- 📊 Pie Chart: Order Status Distribution -->
+      <div class="chart-container">
+        <div class="chart-title">📊 Order Status Distribution (Pie Chart)</div>
+        <canvas id="orderStatusChart" class="chart-canvas"></canvas>
+      </div>
+
+      <!-- 📈 Line Chart: Monthly Sales Trend -->
+      <div class="chart-container">
+        <div class="chart-title">📈 Monthly Sales Trend (Line Chart)</div>
+        <canvas id="salesTrendChart" class="chart-canvas"></canvas>
+      </div>
+
+      <!-- 📊 Bar Chart: Top Selling Products -->
+      <div class="chart-container full-width">
+        <div class="chart-title">📊 Top Selling Products (Bar Chart)</div>
+        <canvas id="topProductsChart" class="chart-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- ✅ Data Tables -->
+    <div class="tables-grid">
+      <!-- Recent Orders -->
+      <div class="table-container">
+        <div class="table-title">📋 Recent Orders</div>
+        <div id="recentOrdersTable">
+          <div class="loading">Loading recent orders...</div>
+        </div>
+      </div>
+
+      <!-- Low Stock Products -->
+      <div class="table-container">
+        <div class="table-title">⚠️ Low Stock Products</div>
+        <div id="lowStockTable">
+          <div class="loading">Loading low stock products...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Include Chart.js Library -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    // ✅ Dashboard JavaScript
+    $(document).ready(function() {
+      // Load header first
+      $("#header-container").load("header.html", function () {
+        const role = sessionStorage.getItem("role") || localStorage.getItem("role");
+        if (role === "admin") {
+          const editUsersLink = document.getElementById("editUsersLink");
+          const dashboardLink = document.getElementById("dashboardLink");
+          if (editUsersLink) editUsersLink.style.display = "inline-block";
+          if (dashboardLink) dashboardLink.style.display = "inline-block";
+        }
+      });
+
+      // Load all dashboard data
+      loadDashboardData();
+      loadRecentOrders();
+      loadLowStockProducts();
+    });
+
+    // ✅ Load Main Dashboard Analytics Data
+    function loadDashboardData() {
+      const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                    sessionStorage.getItem("token") || localStorage.getItem("token");
+
+      $.ajax({
+        url: "/api/dashboard/analytics",
+        method: "GET",
+        headers: {
+          Authorization: "Bearer " + token
+        },
+        success: function(response) {
+          console.log("📊 Dashboard data loaded:", response);
+          
+          if (response.success) {
+            updateStatistics(response.data.summaryStats[0]);
+            createOrderStatusChart(response.data.orderStatusDistribution);
+            createSalesTrendChart(response.data.monthlySales);
+            createTopProductsChart(response.data.topProducts);
+          }
+        },
+        error: function(xhr) {
+          console.error("❌ Failed to load dashboard data:", xhr);
+          handleAuthError(xhr);
+        }
+      });
+    }
+
+    // ✅ Update Statistics Cards
+    function updateStatistics(stats) {
+      $("#totalUsers").text(stats.totalUsers || 0);
+      $("#totalProducts").text(stats.totalProducts || 0);
+      $("#totalOrders").text(stats.totalOrders || 0);
+      $("#totalRevenue").text("₱" + (stats.totalRevenue ? stats.totalRevenue.toLocaleString() : "0"));
+    }
+
+    // ✅ Create Pie Chart: Order Status Distribution
+    function createOrderStatusChart(data) {
+      const ctx = document.getElementById('orderStatusChart').getContext('2d');
+      
+      const labels = data.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1));
+      const values = data.map(item => item.count);
+      const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors.slice(0, labels.length),
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((context.parsed / total) * 100).toFixed(1);
+                  return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ✅ Create Line Chart: Monthly Sales Trend
+    function createSalesTrendChart(data) {
+      const ctx = document.getElementById('salesTrendChart').getContext('2d');
+      
+      const labels = data.map(item => {
+        const date = new Date(item.month + '-01');
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      });
+      const orderCounts = data.map(item => item.orderCount);
+      const revenues = data.map(item => item.totalRevenue);
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Number of Orders',
+            data: orderCounts,
+            borderColor: '#6c63ff',
+            backgroundColor: 'rgba(108, 99, 255, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y'
+          }, {
+            label: 'Revenue (₱)',
+            data: revenues,
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            yAxisID: 'y1'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Month'
+              }
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Number of Orders'
+              },
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Revenue (₱)'
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
+            }
+          }
+        }
+      });
+    }
+
+    // ✅ Create Bar Chart: Top Selling Products
+    function createTopProductsChart(data) {
+      const ctx = document.getElementById('topProductsChart').getContext('2d');
+      
+      const labels = data.map(item => item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name);
+      const quantities = data.map(item => item.totalSold);
+      const revenues = data.map(item => item.revenue);
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Units Sold',
+            data: quantities,
+            backgroundColor: 'rgba(108, 99, 255, 0.8)',
+            borderColor: '#6c63ff',
+            borderWidth: 1,
+            yAxisID: 'y'
+          }, {
+            label: 'Revenue (₱)',
+            data: revenues,
+            backgroundColor: 'rgba(40, 167, 69, 0.8)',
+            borderColor: '#28a745',
+            borderWidth: 1,
+            yAxisID: 'y1'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            tooltip: {
+              callbacks: {
+                afterLabel: function(context) {
+                  const product = data[context.dataIndex];
+                  return 'Brand: ' + product.brand;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Products'
+              }
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: {
+                display: true,
+                text: 'Units Sold'
+              },
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Revenue (₱)'
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
+            }
+          }
+        }
+      });
+    }
+
+    // ✅ Load Recent Orders
+    function loadRecentOrders() {
+      const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                    sessionStorage.getItem("token") || localStorage.getItem("token");
+
+      $.ajax({
+        url: "/api/dashboard/recent-orders",
+        method: "GET",
+        headers: {
+          Authorization: "Bearer " + token
+        },
+        success: function(data) {
+          displayRecentOrders(data);
+        },
+        error: function(xhr) {
+          $("#recentOrdersTable").html('<div class="error">Failed to load recent orders</div>');
+          handleAuthError(xhr);
+        }
+      });
+    }
+
+    // ✅ Display Recent Orders Table
+    function displayRecentOrders(orders) {
+      let html = '<table><thead><tr><th>Order ID</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead><tbody>';
+      
+      orders.forEach(order => {
+        const date = new Date(order.orderDate).toLocaleDateString();
+        const amount = '₱' + parseFloat(order.totalAmount).toLocaleString();
+        html += `
+          <tr>
+            <td>#${order.orderID}</td>
+            <td>${order.userName}</td>
+            <td>${date}</td>
+            <td>${amount}</td>
+            <td><span class="status-badge status-${order.status}">${order.status}</span></td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      $("#recentOrdersTable").html(html);
+    }
+
+    // ✅ Load Low Stock Products
+    function loadLowStockProducts() {
+      const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                    sessionStorage.getItem("token") || localStorage.getItem("token");
+
+      $.ajax({
+        url: "/api/dashboard/low-stock",
+        method: "GET",
+        headers: {
+          Authorization: "Bearer " + token
+        },
+        success: function(data) {
+          displayLowStockProducts(data);
+        },
+        error: function(xhr) {
+          $("#lowStockTable").html('<div class="error">Failed to load low stock products</div>');
+          handleAuthError(xhr);
+        }
+      });
+    }
+
+    // ✅ Display Low Stock Products Table
+    function displayLowStockProducts(products) {
+      if (products.length === 0) {
+        $("#lowStockTable").html('<div style="text-align: center; color: #28a745; padding: 20px;">✅ All products are well stocked!</div>');
+        return;
+      }
+
+      let html = '<table><thead><tr><th>Product</th><th>Brand</th><th>Stock</th><th>Price</th></tr></thead><tbody>';
+      
+      products.forEach(product => {
+        const price = '₱' + parseFloat(product.price).toLocaleString();
+        html += `
+          <tr>
+            <td>${product.name}</td>
+            <td>${product.brand}</td>
+            <td><span class="low-stock">${product.quantity} left</span></td>
+            <td>${price}</td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      $("#lowStockTable").html(html);
+    }
+
+    // ✅ Handle Authentication Errors
+    function handleAuthError(xhr) {
+      if (xhr.status === 401) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Authentication Expired',
+          text: 'Your session has expired. Please log in again.',
+          confirmButtonText: 'Go to Login',
+          confirmButtonColor: '#6c63ff'
+        }).then(() => {
+          window.location.href = "/login.html";
+        });
+      }
+    }
+  </script>
+</body>
+</html>

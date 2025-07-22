@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Cart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #6c63ff;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #6c63ff;
+      color: white;
+    }
+
+    tr:hover {
+      background: #f9f9f9;
+    }
+
+    .qty-input {
+      width: 60px;
+      padding: 6px;
+      text-align: center;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #cc0000;
+    }
+
+    #total {
+      font-weight: bold;
+      font-size: 18px;
+      text-align: right;
+      margin-top: 20px;
+    }
+
+    #checkoutBtn {
+      background-color: #28a745;
+      margin-top: 10px;
+    }
+
+    #checkoutBtn:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+    <div id="header-container"></div>
+
+  <h1>🛒 My Cart</h1>
+  <div id="cartContainer"></div>
+  <p id="total"></p>
+  <div style="text-align: right;">
+    <button id="checkoutBtn" class="btn">Proceed to Checkout</button>
+  </div>
+
+  <script>
+    async function loadCart() {
+      const userID = localStorage.getItem("userID") || sessionStorage.getItem("userID");
+      const token = localStorage.getItem("jwtToken") || localStorage.getItem("token") || sessionStorage.getItem("jwtToken");
+      
+      if (!userID || !token) {
+        document.getElementById("cartContainer").innerHTML = "<p>Please log in to view your cart.</p>";
+        document.getElementById("total").textContent = "";
+        return;
+      }
+
+      try {
+        console.log("Loading cart for user:", userID);
+        
+        const res = await fetch(`/api/cart/${userID}/`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        
+        console.log("Cart API response status:", res.status);
+        
+        if (!res.ok) {
+          if (res.status === 401) {
+            throw new Error("Authentication failed. Please login again.");
+          }
+          if (res.status === 403) {
+            throw new Error("Access denied. You can only view your own cart.");
+          }
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        console.log("Cart data received:", data);
+        
+        const { items, totalAmount } = data;
+
+        if (!items || items.length === 0) {
+          document.getElementById("cartContainer").innerHTML = "<p style='text-align: center; padding: 40px; color: #666;'>Your cart is empty. <a href='home.html'>Start shopping!</a></p>";
+          document.getElementById("total").textContent = "";
+          return;
+        }
+
+        let html = `
+          <table>
+            <tr>
+              <th>Name</th>
+              <th>Brand</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Subtotal</th>
+              <th>Action</th>
+            </tr>
+        `;
+
+        items.forEach(p => {
+          html += `
+            <tr>
+              <td>${p.name}</td>
+              <td>${p.brand}</td>
+              <td>₱${p.price}</td>
+              <td>
+                <input type="number" class="qty-input" min="1" value="${p.quantity}"
+                  onchange="updateQty(${p.cartID}, ${p.productID}, this.value)" />
+              </td>
+              <td>₱${(p.totalItem).toFixed(2)}</td>
+              <td><button class="btn" onclick="removeItem(${p.cartID})">Remove</button></td>
+            </tr>
+          `;
+        });
+
+        html += "</table>";
+        document.getElementById("cartContainer").innerHTML = html;
+        document.getElementById("total").textContent = "Total: ₱" + totalAmount.toFixed(2);
+        
+      } catch (err) {
+        console.error("Error loading cart:", err);
+        
+        if (err.message.includes("Authentication failed") || err.message.includes("login")) {
+          alert("Session expired. Please login again.");
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.href = "/login.html";
+        } else {
+          document.getElementById("cartContainer").innerHTML = `<p style='color: red; text-align: center;'>Error loading cart: ${err.message}</p>`;
+          document.getElementById("total").textContent = "";
+        }
+      }
+    }
+
+    function updateQty(cartID, productID, newQty) {
+      // ✅ jQuery Validation for Quantity Update
+      const quantity = parseInt(newQty);
+      const token = localStorage.getItem("jwtToken") || localStorage.getItem("token");
+      
+      if (!token) {
+        alert("You must be logged in to update cart.");
+        return;
+      }
+      
+      if (isNaN(quantity) || quantity < 1) {
+        alert("Quantity must be at least 1");
+        loadCart(); // Reset to original value
+        return;
+      }
+      
+      if (quantity > 999) {
+        alert("Quantity cannot exceed 999");
+        loadCart(); // Reset to original value
+        return;
+      }
+
+      fetch('/api/cart/update', {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ cartID, quantity: quantity })
+      })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error("Failed to update quantity");
+        }
+        return res.json();
+      })
+      .then(() => {
+        loadCart();
+        // Show success feedback
+        const statusMsg = document.getElementById("updateStatus");
+        if (statusMsg) statusMsg.remove();
+        
+        const msg = document.createElement("div");
+        msg.id = "updateStatus";
+        msg.style.cssText = "color: green; text-align: center; margin: 10px 0; font-weight: bold;";
+        msg.textContent = "Quantity updated successfully!";
+        document.getElementById("cartContainer").appendChild(msg);
+        
+        setTimeout(() => msg.remove(), 2000);
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Failed to update quantity. Please try again.");
+        loadCart(); // Reset to original value
+      });
+    }
+
+    function removeItem(cartID) {
+      // ✅ Enhanced validation for Item Removal
+      const token = localStorage.getItem("jwtToken") || localStorage.getItem("token") || sessionStorage.getItem("jwtToken");
+      
+      if (!token) {
+        alert("You must be logged in to remove items from cart.");
+        window.location.href = "/login.html";
+        return;
+      }
+      
+      if (!confirm("Are you sure you want to remove this item from your cart?")) {
+        return;
+      }
+
+      // Show loading state
+      const button = event.target;
+      const originalText = button.textContent;
+      button.textContent = "Removing...";
+      button.disabled = true;
+
+      fetch(`/api/cart/${cartID}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
+      .then(res => {
+        console.log("Delete response status:", res.status);
+        if (!res.ok) {
+          if (res.status === 401) {
+            throw new Error("Session expired. Please login again.");
+          }
+          throw new Error(`Failed to remove item (Status: ${res.status})`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        console.log("Delete response:", data);
+        
+        // Show success feedback
+        const statusMsg = document.getElementById("removeStatus");
+        if (statusMsg) statusMsg.remove();
+        
+        const msg = document.createElement("div");
+        msg.id = "removeStatus";
+        msg.style.cssText = "color: green; text-align: center; margin: 10px 0; font-weight: bold; background: #d4edda; border: 1px solid #c3e6cb; padding: 10px; border-radius: 5px;";
+        msg.textContent = "Item removed from cart successfully!";
+        document.getElementById("cartContainer").appendChild(msg);
+        
+        setTimeout(() => {
+          if (msg.parentNode) msg.remove();
+        }, 3000);
+        
+        // Reload cart after successful removal
+        setTimeout(() => {
+          loadCart();
+        }, 500);
+      })
+      .catch(err => {
+        console.error("Remove item error:", err);
+        
+        // Reset button state
+        button.textContent = originalText;
+        button.disabled = false;
+        
+        if (err.message.includes("Session expired")) {
+          alert("Session expired. Please login again.");
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.href = "/login.html";
+        } else {
+          alert(`Failed to remove item: ${err.message}`);
+        }
+      });
+    }
+
+    document.getElementById("checkoutBtn").addEventListener("click", () => {
+      // ✅ jQuery Validation for Checkout Button
+      const userID = localStorage.getItem("userID");
+      
+      if (!userID) {
+        alert("Please log in to checkout.");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      // Check if cart has items before proceeding
+      const cartTable = document.querySelector("#cartContainer table");
+      if (!cartTable) {
+        alert("Your cart is empty. Please add items before checkout.");
+        return;
+      }
+
+      // Validate authentication token
+      const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+      if (!token) {
+        alert("Session expired. Please log in again.");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      window.location.href = `/checkout.html?userID=${userID}`;
+    });
+
+    loadCart();
+  </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    // Load header then check role
+    $("#header-container").load("header.html", function () {
+      const role = localStorage.getItem("role");
+      if (role === "admin") {
+        document.getElementById("editUsersLink").style.display = "inline-block";
+      }
+    });
+  </script>
+</body>
+</html>

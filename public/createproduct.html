@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Product</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    :root {
+      --primary: #f6f8ff;
+      --accent: #6c63ff;
+      --light: #ffffff;
+      --text: #333;
+      --muted: #777;
+    }
+
+    body {
+      background: var(--primary);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    #header-container {
+      width: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 80px;
+      z-index: 100;
+    }
+
+    .form-card {
+      background: var(--light);
+      border-radius: 14px;
+      padding: 30px;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      margin-top: 120px; /* Pushes form below fixed header */
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: var(--accent);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1.5px solid #ccc;
+      background: #f9f9f9;
+      transition: border 0.2s;
+      font-size: 14px;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      background: #fff;
+      outline: none;
+    }
+
+    .full-width {
+      grid-column: span 2;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 20px;
+      background: var(--accent);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #574ee0;
+    }
+
+    #status {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: bold;
+      color: #28a745;
+    }
+
+    /* ✅ jQuery Validation Error Styles */
+    .error {
+      color: #dc3545;
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    }
+    
+    input.error, select.error, textarea.error {
+      border-color: #dc3545 !important;
+      background-color: #ffe6e6 !important;
+    }
+    
+    input.valid, select.valid, textarea.valid {
+      border-color: #28a745 !important;
+      background-color: #e6ffe6 !important;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .full-width {
+        grid-column: span 1;
+      }
+    }
+  </style>
+</head>
+
+<body style="display: none;">
+  <script>
+    // ✅ IMMEDIATE admin check - runs before anything else loads
+    console.log("🚀 IMMEDIATE admin check starting...");
+    
+    // Get auth data immediately
+    const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                  sessionStorage.getItem("token") || localStorage.getItem("token");
+    const role = sessionStorage.getItem("role") || localStorage.getItem("role");
+    
+    console.log("Token present:", !!token);
+    console.log("User role:", role);
+    console.log("sessionStorage contents:", {
+      jwtToken: sessionStorage.getItem("jwtToken"),
+      token: sessionStorage.getItem("token"),
+      role: sessionStorage.getItem("role"),
+      name: sessionStorage.getItem("name")
+    });
+    console.log("localStorage contents:", {
+      jwtToken: localStorage.getItem("jwtToken"),
+      token: localStorage.getItem("token"),
+      role: localStorage.getItem("role"),
+      name: localStorage.getItem("name")
+    });
+    
+    // If not admin, redirect immediately
+    if (!token) {
+      console.log("❌ No token - redirecting to login");
+      alert("Please log in to access this page.");
+      window.location.replace("/login.html");
+    } else if (role !== "admin") {
+      console.log("❌ Not admin - redirecting to home");
+      alert(`Access denied. Administrator privileges required.\nYour role: ${role}\n\nRedirecting to home page...`);
+      window.location.replace("/home.html");
+    } else {
+      console.log("✅ Admin access granted - showing page");
+      document.body.style.display = "flex";
+    }
+  </script>
+
+  <!-- ✅ FIXED: header is now correctly inside body -->
+  <div id="header-container"></div>
+
+  <div class="form-card">
+    <h1>Create Product</h1>
+    <form id="productForm" enctype="multipart/form-data">
+      <div class="form-grid">
+        <div>
+          <label for="name">Product Name *</label>
+          <input type="text" name="name" id="name" required minlength="2" maxlength="100" />
+        </div>
+        <div>
+          <label for="brand">Brand *</label>
+          <input type="text" name="brand" id="brand" required minlength="2" maxlength="50" />
+        </div>
+        <div>
+          <label for="price">Price (₱) *</label>
+          <input type="number" name="price" id="price" required min="0.01" step="0.01" />
+        </div>
+        <div>
+          <label for="ram">RAM *</label>
+          <input type="text" name="ram" id="ram" required pattern="^[0-9]+\s?(GB|TB|MB)$" placeholder="e.g., 8GB" />
+        </div>
+        <div>
+          <label for="storage">Storage *</label>
+          <input type="text" name="storage" id="storage" required pattern="^[0-9]+\s?(GB|TB|MB)$" placeholder="e.g., 256GB" />
+        </div>
+        <div>
+          <label for="availability">Availability *</label>
+          <select name="availability" id="availability" required>
+            <option value="">Select Availability</option>
+            <option value="1">Available</option>
+            <option value="0">Unavailable</option>
+          </select>
+        </div>
+        <div class="full-width">
+          <label for="images">Product Images * (Max 5 images, 5MB each)</label>
+          <input type="file" name="images" id="images" accept="image/jpeg,image/jpg,image/png,image/gif" multiple required />
+          <small>Supported formats: JPG, PNG, GIF</small>
+        </div>
+        <div class="full-width">
+          <label for="mainPhoto">Main Photo Index *</label>
+          <input type="number" name="mainPhoto" id="mainPhoto" min="1" max="5" required />
+          <small>Which image should be the main photo (1 = first image)</small>
+        </div>
+        <div class="full-width">
+          <label for="quantity">Quantity in Stock *</label>
+          <input type="number" name="quantity" id="quantity" required min="0" max="9999" />
+        </div>
+        <div class="full-width">
+          <label for="description">Product Description *</label>
+          <textarea name="description" id="description" rows="4" required minlength="10" maxlength="500" placeholder="Describe the product features..."></textarea>
+        </div>
+      </div>
+      <button type="submit">Submit Product</button>
+    </form>
+    <p id="status"></p>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/additional-methods.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    // ✅ jQuery Validation for Product Creation
+    $(document).ready(function() {
+      
+      // Custom validation methods
+      $.validator.addMethod("filesize", function(value, element, param) {
+        if (element.files.length === 0) return true;
+        for (let i = 0; i < element.files.length; i++) {
+          if (element.files[i].size > param) return false;
+        }
+        return true;
+      }, "File size must be less than 5MB");
+
+      $.validator.addMethod("maxfiles", function(value, element, param) {
+        return element.files.length <= param;
+      }, "Maximum 5 files allowed");
+
+      $.validator.addMethod("validMainPhoto", function(value, element) {
+        const files = $("#images")[0].files;
+        const mainPhotoIndex = parseInt(value);
+        return files.length === 0 || (mainPhotoIndex >= 1 && mainPhotoIndex <= files.length);
+      }, "Main photo index must be within the range of uploaded images");
+
+      // Initialize validation
+      $("#productForm").validate({
+        rules: {
+          name: {
+            required: true,
+            minlength: 2,
+            maxlength: 100
+          },
+          brand: {
+            required: true,
+            minlength: 2,
+            maxlength: 50
+          },
+          price: {
+            required: true,
+            min: 0.01,
+            max: 999999
+          },
+          ram: {
+            required: true,
+            pattern: /^[0-9]+\s?(GB|TB|MB)$/i
+          },
+          storage: {
+            required: true,
+            pattern: /^[0-9]+\s?(GB|TB|MB)$/i
+          },
+          availability: {
+            required: true
+          },
+          images: {
+            required: true,
+            accept: "image/jpeg,image/jpg,image/png,image/gif",
+            filesize: 5242880, // 5MB in bytes
+            maxfiles: 5
+          },
+          mainPhoto: {
+            required: true,
+            min: 1,
+            max: 5,
+            validMainPhoto: true
+          },
+          quantity: {
+            required: true,
+            min: 0,
+            max: 9999,
+            digits: true
+          },
+          description: {
+            required: true,
+            minlength: 10,
+            maxlength: 500
+          }
+        },
+        messages: {
+          name: {
+            required: "Product name is required",
+            minlength: "Product name must be at least 2 characters",
+            maxlength: "Product name cannot exceed 100 characters"
+          },
+          brand: {
+            required: "Brand is required",
+            minlength: "Brand must be at least 2 characters",
+            maxlength: "Brand cannot exceed 50 characters"
+          },
+          price: {
+            required: "Price is required",
+            min: "Price must be greater than 0",
+            max: "Price cannot exceed ₱999,999"
+          },
+          ram: {
+            required: "RAM specification is required",
+            pattern: "Please enter valid RAM format (e.g., 8GB, 16GB)"
+          },
+          storage: {
+            required: "Storage specification is required",
+            pattern: "Please enter valid storage format (e.g., 256GB, 1TB)"
+          },
+          availability: {
+            required: "Please select availability status"
+          },
+          images: {
+            required: "Please select at least one product image",
+            accept: "Only JPG, PNG, and GIF images are allowed"
+          },
+          mainPhoto: {
+            required: "Main photo index is required",
+            min: "Main photo index must be at least 1",
+            max: "Main photo index cannot exceed 5"
+          },
+          quantity: {
+            required: "Quantity is required",
+            min: "Quantity cannot be negative",
+            max: "Quantity cannot exceed 9999",
+            digits: "Quantity must be a whole number"
+          },
+          description: {
+            required: "Product description is required",
+            minlength: "Description must be at least 10 characters",
+            maxlength: "Description cannot exceed 500 characters"
+          }
+        },
+        errorClass: "error",
+        validClass: "valid",
+        errorPlacement: function(error, element) {
+          error.insertAfter(element);
+        },
+        highlight: function(element) {
+          $(element).addClass("error").removeClass("valid");
+        },
+        unhighlight: function(element) {
+          $(element).removeClass("error").addClass("valid");
+        },
+        submitHandler: function(form) {
+          // Show loading state
+          const submitBtn = $(form).find('button[type="submit"]');
+          const originalText = submitBtn.text();
+          submitBtn.text('Creating Product...').prop('disabled', true);
+
+          // Get JWT token from storage (prioritize jwtToken as requested)
+          const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                       sessionStorage.getItem("token") || localStorage.getItem("token");
+          
+          if (!token) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Authentication Required',
+              text: 'Please log in again to continue.',
+              confirmButtonText: 'Go to Login',
+              confirmButtonColor: '#6c63ff'
+            }).then(() => {
+              window.location.href = "/login.html";
+            });
+            submitBtn.text(originalText).prop('disabled', false);
+            return;
+          }
+
+          // Create FormData and submit with Authorization header
+          const formData = new FormData(form);
+          
+          fetch("/api/products", {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer " + token
+            },
+            body: formData,
+          })
+          .then(response => {
+            if (response.status === 401) {
+              throw new Error("Authentication expired. Please log in again.");
+            }
+            return response.json();
+          })
+          .then(result => {
+            if (result.productId) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Product Created!',
+                text: 'Product has been created successfully. Redirecting to product management...',
+                timer: 2000,
+                timerProgressBar: true,
+                showConfirmButton: false
+              }).then(() => {
+                window.location.href = "/viewproduct.html";
+              });
+            } else {
+              throw new Error(result.message || "Error creating product");
+            }
+          })
+          .catch(error => {
+            console.error(error);
+            if (error.message.includes("Authentication expired")) {
+              Swal.fire({
+                icon: 'warning',
+                title: 'Authentication Expired',
+                text: 'Your session has expired. Please log in again.',
+                confirmButtonText: 'Go to Login',
+                confirmButtonColor: '#6c63ff'
+              }).then(() => {
+                window.location.href = "/login.html";
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error Creating Product',
+                text: error.message || 'Server error. Please try again.',
+                confirmButtonText: 'Try Again',
+                confirmButtonColor: '#6c63ff'
+              });
+              submitBtn.text(originalText).prop('disabled', false);
+            }
+          });
+        }
+      });
+
+      // Real-time validation for file input
+      $("#images").on("change", function() {
+        const files = this.files;
+        const maxPhotosField = $("#mainPhoto");
+        
+        if (files.length > 0) {
+          maxPhotosField.attr("max", files.length);
+          if (parseInt(maxPhotosField.val()) > files.length) {
+            maxPhotosField.val(1);
+          }
+        }
+        
+        // Validate individual file sizes
+        for (let i = 0; i < files.length; i++) {
+          if (files[i].size > 5242880) { // 5MB
+            $(this).addClass("error");
+            $(this).after(`<label class="error">File "${files[i].name}" is too large (max 5MB)</label>`);
+            return;
+          }
+        }
+      });
+
+      // Update main photo max when images change
+      $("#mainPhoto").on("input", function() {
+        $(this).valid();
+      });
+    });
+  </script>
+
+  <script>
+    // Load header and check admin role (prioritize jwtToken)
+    $("#header-container").load("header.html", function () {
+      const role = sessionStorage.getItem("role") || localStorage.getItem("role");
+      if (role === "admin") {
+        const editUsersLink = document.getElementById("editUsersLink");
+        const dashboardLink = document.getElementById("dashboardLink");
+        if (editUsersLink) editUsersLink.style.display = "inline-block";
+        if (dashboardLink) dashboardLink.style.display = "inline-block";
+      }
+    });
+  </script>
+  
+</body>
+</html>

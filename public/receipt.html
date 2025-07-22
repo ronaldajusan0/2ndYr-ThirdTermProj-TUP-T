@@ -1,0 +1,266 @@
+<!-- Modern Order Receipt UI -->
+<style>
+  .receipt-container {
+    max-width: 700px;
+    margin: 30px auto;
+    padding: 20px;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f9f9f9;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  .receipt-container h3 {
+    margin-top: 0;
+    color: #333;
+  }
+  .order-meta {
+    margin-bottom: 20px;
+    color: #555;
+  }
+  .order-meta p {
+    margin: 5px 0;
+  }
+  table.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .receipt-table th, .receipt-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  .receipt-table th {
+    background-color: #eaeaea;
+    color: #333;
+  }
+  .receipt-table td {
+    color: #444;
+  }
+  .total-row td {
+    font-weight: bold;
+    background-color: #f0f0f0;
+  }
+  .btn-group {
+    margin-top: 25px;
+    text-align: right;
+  }
+  .btn-group button {
+    padding: 10px 18px;
+    font-size: 14px;
+    margin-left: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .btn-cancel {
+    background-color: #e74c3c;
+    color: white;
+  }
+  .btn-cancel:hover {
+    background-color: #c0392b;
+  }
+  .btn-complete {
+    background-color: #2ecc71;
+    color: white;
+  }
+  .btn-complete:hover {
+    background-color: #27ae60;
+  }
+</style>
+
+<div class="receipt-container">
+  <div id="receiptDetails"></div>
+  <div class="btn-group">
+    <button class="btn-cancel" onclick="cancelOrder()">Cancel Delivery</button>
+    <button class="btn-complete" onclick="completeOrder()">Mark as Received</button>
+  </div>
+</div>
+
+<!-- SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+async function loadReceipt() {
+  const orderID = new URLSearchParams(location.search).get("orderID");
+  const res = await fetch(`/api/orders/orderinfo/${orderID}`);
+  const data = await res.json();
+
+  if (!data || !data.items || !data.items.length) {
+    document.getElementById("receiptDetails").innerHTML = "<p>No order details found.</p>";
+    return;
+  }
+
+  let html = `
+    <h3>Receipt for Order #${data.orderID}</h3>
+    <div class="order-meta">
+      <p><strong>Status:</strong> ${data.status}</p>
+      <p><strong>Shipping Address:</strong> ${data.shippingAddress}</p>
+    </div>
+    <table class="receipt-table">
+      <tr>
+        <th>Product</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Total</th>
+      </tr>
+  `;
+
+  let grandTotal = 0;
+  data.items.forEach(item => {
+    const subtotal = item.quantity * item.priceAtPurchase;
+    grandTotal += subtotal;
+    html += `
+      <tr>
+        <td>${item.name}</td>
+        <td>${item.quantity}</td>
+        <td>₱${item.priceAtPurchase.toFixed(2)}</td>
+        <td>₱${subtotal.toFixed(2)}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      <tr class="total-row">
+        <td colspan="3">Total</td>
+        <td>₱${grandTotal.toFixed(2)}</td>
+      </tr>
+    </table>
+  `;
+
+  document.getElementById("receiptDetails").innerHTML = html;
+}
+
+async function completeOrder() {
+  const orderID = new URLSearchParams(location.search).get("orderID");
+  const email = localStorage.getItem("email");
+
+  if (!email) {
+    alert("Email not found. Please login again.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/orders/${orderID}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "delivered", email })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to update status.");
+
+    const orderRes = await fetch(`/api/orders/orderinfo/${orderID}`);
+    const orderData = await orderRes.json();
+
+    if (!orderData.items || !orderData.items.length) {
+      Swal.fire("No items found to rate.");
+      return;
+    }
+
+    for (const item of orderData.items) {
+      const { value: formValues } = await Swal.fire({
+        title: `Review: ${item.name}`,
+        html: `
+          <label>Your Rating for <strong>${item.name}</strong>:</label>
+          <div id="stars-${item.productID}" class="starContainer"></div>
+          <textarea id="feedback-${item.productID}" class="swal2-textarea" placeholder="Write your feedback here..." required></textarea>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Submit',
+        cancelButtonText: 'Skip',
+        preConfirm: () => {
+          const rating = document.querySelectorAll(`#stars-${item.productID} span.filled`).length;
+          const feedbackText = document.getElementById(`feedback-${item.productID}`).value.trim();
+
+          if (rating === 0 || feedbackText === "") {
+            Swal.showValidationMessage("⚠️ Please provide both a star rating and written feedback.");
+            return false;
+          }
+
+          return { rating, feedback: feedbackText };
+        },
+        didOpen: () => {
+          const container = document.getElementById(`stars-${item.productID}`);
+          for (let i = 1; i <= 5; i++) {
+            const star = document.createElement("span");
+            star.textContent = "★";
+            star.style.fontSize = "24px";
+            star.style.cursor = "pointer";
+            star.style.color = "#ccc";
+            star.addEventListener("click", () => {
+              container.querySelectorAll("span").forEach((s, index) => {
+                s.style.color = index < i ? "#f1c40f" : "#ccc";
+                s.classList.toggle("filled", index < i);
+              });
+            });
+            container.appendChild(star);
+          }
+        }
+      });
+
+      if (formValues && formValues.rating > 0) {
+        await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderID,
+            productID: item.productID,
+            email,
+            feedback: formValues.feedback,
+            rating: formValues.rating
+          })
+        });
+      }
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Feedback submitted!',
+      text: 'You will now be redirected to view and manage your feedback.',
+      timer: 2000,
+      showConfirmButton: false
+    }).then(() => {
+      window.location.href = `/feedback.html?email=${encodeURIComponent(email)}&orderID=${orderID}`;
+    });
+
+  } catch (err) {
+    alert("❌ Error completing order: " + err.message);
+    console.error(err);
+  }
+}
+
+async function cancelOrder() {
+  const orderID = new URLSearchParams(location.search).get("orderID");
+  const email = localStorage.getItem("email");
+
+  try {
+    const res = await fetch(`/api/orders/${orderID}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "cancelled", email })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Order Cancelled',
+        text: 'Redirecting to homepage...',
+        timer: 2000,
+        showConfirmButton: false
+      }).then(() => {
+        window.location.href = "/home.html";
+      });
+    } else {
+      throw new Error(data.message || "Failed to cancel order.");
+    }
+  } catch (err) {
+    alert("❌ Error cancelling order: " + err.message);
+    console.error(err);
+  }
+}
+
+loadReceipt();
+</script>

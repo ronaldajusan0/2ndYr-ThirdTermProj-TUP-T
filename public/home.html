@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Home | ProductApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- ✅ Bootstrap CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+    crossorigin="anonymous"
+  />
+
+  <!-- ✅ SweetAlert2 CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.16.1/sweetalert2.css"
+    integrity="sha512-fjO3Vy3QodX9c6G9AUmr6WuIaEPdGRxBjD7gjatG5gGylzYyrEq3U0q+smkG6CwIY0L8XALRFHh4KPHig0Q1ug=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  
+  <!-- ✅ Font Awesome -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    crossorigin="anonymous"
+  />
+  
+  <!-- ✅ jQuery UI CSS -->
+  <link
+    rel="stylesheet"
+    href="https://code.jquery.com/ui/1.13.2/themes/ui-lightness/jquery-ui.css"
+    crossorigin="anonymous"
+  />
+
+  <style>
+    :root {
+      --bg: #f0f4ff;
+      --card: #fff;
+      --accent: #6c63ff;
+      --text: #222;
+      --muted: #666;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: var(--accent);
+    }
+
+    .product-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .product-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      text-align: center;
+      transition: transform 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .product-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .product-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+
+    .product-card h3 {
+      margin: 10px 0 4px;
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    .product-card p {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 4px 0;
+    }
+
+    #status {
+      text-align: center;
+      margin-top: 20px;
+      font-weight: bold;
+      color: red;
+    }
+
+    button {
+      margin: 6px 4px 0;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #574ee0;
+    }
+
+    /* ✅ Search/Autocomplete Styles */
+    .search-container {
+      max-width: 600px;
+      margin: 0 auto 30px;
+      padding: 0 20px;
+      position: relative;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 16px;
+      border: 2px solid var(--accent);
+      border-radius: 25px;
+      outline: none;
+      background: var(--card);
+      box-shadow: 0 4px 15px rgba(108, 99, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .search-box:focus {
+      box-shadow: 0 4px 20px rgba(108, 99, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .autocomplete-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 20px;
+      right: 20px;
+      background: var(--card);
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .autocomplete-suggestion {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.2s;
+    }
+
+    .autocomplete-suggestion.active {
+      background: #f8f9ff;
+      border-left: 3px solid var(--accent);
+    }
+
+    .autocomplete-suggestion:hover,
+    .autocomplete-suggestion.active:hover {
+      background: #f0f4ff;
+    }
+
+    .autocomplete-suggestion:last-child {
+      border-bottom: none;
+    }
+
+    .suggestion-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .suggestion-details {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .no-results {
+      padding: 16px;
+      text-align: center;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .search-highlight {
+      background: #ffeb3b;
+      padding: 1px 2px;
+      border-radius: 2px;
+    }
+
+    /* ✅ View Mode Toggle Styles */
+    .view-mode-toggle {
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      background: var(--card);
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: 20px auto;
+    }
+
+    .view-mode-toggle button {
+      margin: 0 5px;
+      padding: 10px 20px;
+      border: 2px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      border-radius: 25px;
+      transition: all 0.3s ease;
+    }
+
+    .view-mode-toggle button.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .view-mode-toggle button:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* ✅ Pagination Styles */
+    .pagination-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin: 20px auto;
+      max-width: 800px;
+      text-align: center;
+    }
+
+    .pagination-info {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+    }
+
+    .pagination .page-link {
+      color: var(--accent);
+      border-color: #dee2e6;
+      margin: 0 2px;
+      border-radius: 5px;
+    }
+
+    .pagination .page-item.active .page-link {
+      background-color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .pagination .page-link:hover {
+      color: #574ee0;
+      background-color: #f8f9fa;
+    }
+
+    /* ✅ Infinite Scroll Styles */
+    .infinite-scroll-loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .infinite-scroll-loading i {
+      font-size: 2rem;
+      animation: spin 1s linear infinite;
+      color: var(--accent);
+    }
+
+    .infinite-scroll-end {
+      text-align: center;
+      padding: 30px;
+      color: var(--muted);
+      background: white;
+      border-radius: 8px;
+      margin: 20px auto;
+      max-width: 600px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ✅ Results Info */
+    .results-info {
+      text-align: center;
+      margin: 10px 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="header-container"></div>
+
+  <h1>Welcome to ProductApp 🛍️</h1>
+  
+  <!-- ✅ Search/Autocomplete Section -->
+  <div class="search-container">
+    <input type="text" id="searchBox" class="search-box" placeholder="🔍 Search products by name, brand, RAM, storage..." autocomplete="off">
+    <div id="autocompleteResults" class="autocomplete-suggestions"></div>
+  </div>
+
+  <!-- ✅ View Mode Toggle -->
+  <div class="view-mode-toggle">
+    <label><strong>View Mode:</strong></label>
+    <button id="paginationModeBtn" class="active">
+      <i class="fas fa-th-list"></i> Pagination
+    </button>
+    <button id="infiniteScrollModeBtn">
+      <i class="fas fa-arrows-alt-v"></i> Infinite Scroll
+    </button>
+  </div>
+
+  <!-- ✅ Results Info -->
+  <div class="results-info" id="resultsInfo">
+    <span id="resultsCount">Loading...</span>
+  </div>
+
+  <!-- ✅ Top Pagination (shown only in pagination mode) -->
+  <div id="paginationBarTop" style="display: none;"></div>
+
+  <div id="productList" class="product-list"></div>
+  <p id="status"></p>
+
+  <!-- ✅ Bottom Pagination (shown only in pagination mode) -->
+  <div id="paginationBarBottom" style="display: none;"></div>
+
+  <!-- ✅ Infinite Scroll Loading Indicator -->
+  <div id="infiniteScrollLoading" class="infinite-scroll-loading" style="display: none;">
+    <i class="fas fa-spinner"></i>
+    <p>Loading more products...</p>
+  </div>
+
+  <!-- ✅ Infinite Scroll End Indicator -->
+  <div id="infiniteScrollEnd" class="infinite-scroll-end" style="display: none;">
+    <i class="fas fa-check-circle"></i>
+    <h5>You've reached the end!</h5>
+    <p>All products have been loaded.</p>
+  </div>
+
+  <!-- ✅ Load Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.16.1/sweetalert2.min.js" integrity="sha512-LGHBR+kJ5jZSIzhhdfytPoEHzgaYuTRifq9g5l6ja6/k9NAOsAi5dQh4zQF6JIRB8cAYxTRedERUF+97/KuivQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  
+  <script>
+    // ✅ Global error handler
+    window.addEventListener('error', function(e) {
+      console.error('JavaScript Error:', e.error);
+      console.error('Error details:', {
+        message: e.message,
+        filename: e.filename,
+        lineno: e.lineno,
+        colno: e.colno
+      });
+      
+      // Prevent automatic page reload on certain errors
+      if (e.message && e.message.includes('Network')) {
+        e.preventDefault();
+      }
+    });
+
+    // ✅ Unhandled promise rejection handler
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('Unhandled Promise Rejection:', e.reason);
+      e.preventDefault(); // Prevent the default browser behavior
+    });
+
+    // ✅ Page reload protection
+    let reloadCount = parseInt(sessionStorage.getItem('pageReloadCount') || '0');
+    if (reloadCount > 3) {
+      console.warn('Page has reloaded too many times. Stopping automatic reloads.');
+      sessionStorage.setItem('pageReloadsPrevented', 'true');
+    } else {
+      sessionStorage.setItem('pageReloadCount', (reloadCount + 1).toString());
+    }
+
+    // ✅ Pagination & Infinite Scroll Variables
+    let currentPage = 1;
+    let totalPages = 1;
+    let totalProducts = 0;
+    let itemsPerPage = 12;
+    let currentMode = 'pagination'; // 'pagination' or 'infinite'
+    let isLoading = false;
+    let allProductsLoaded = false;
+    let currentSearchQuery = '';
+    let allProducts = []; // For infinite scroll
+    let loadedProducts = new Set(); // To prevent duplicates
+
+    // ✅ Enhanced loadProducts function with pagination support
+    async function loadProducts(append = false) {
+      if (isLoading) {
+        console.log("Already loading products, skipping...");
+        return;
+      }
+      
+      isLoading = true;
+      const productList = document.getElementById("productList");
+      const status = document.getElementById("status");
+      
+      console.log(`Loading products: page ${currentPage}, append: ${append}, mode: ${currentMode}`);
+      
+      if (!append) {
+        productList.innerHTML = "<p>Loading...</p>";
+      } else {
+        $("#infiniteScrollLoading").show();
+      }
+
+      try {
+        // Use paginated API endpoint
+        const params = new URLSearchParams({
+          page: currentPage,
+          limit: itemsPerPage,
+          search: currentSearchQuery
+        });
+
+        const apiUrl = `/api/products/paginated?${params.toString()}`;
+        console.log("API URL:", apiUrl);
+
+        const res = await fetch(apiUrl);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
+        const response = await res.json();
+
+        console.log("📦 Products loaded:", response);
+        
+        // Validate response structure
+        if (!response || typeof response !== 'object') {
+          throw new Error("Invalid response format");
+        }
+        
+        totalProducts = response.total || 0;
+        totalPages = response.totalPages || 1;
+        
+        if (!response.products || response.products.length === 0) {
+          if (!append) {
+            productList.innerHTML = "<p>No products available.</p>";
+          }
+          if (currentMode === 'infinite') {
+            allProductsLoaded = true;
+            $("#infiniteScrollEnd").show();
+          }
+          updateResultsInfo();
+          isLoading = false;
+          $("#infiniteScrollLoading").hide();
+          return;
+        }
+
+        if (currentMode === 'pagination') {
+          displayProducts(response.products);
+          updatePagination();
+        } else {
+          // Infinite scroll mode
+          if (append) {
+            appendProducts(response.products);
+          } else {
+            displayProducts(response.products);
+            allProducts = [...response.products];
+          }
+          
+          if (response.products.length < itemsPerPage || currentPage >= totalPages) {
+            allProductsLoaded = true;
+            $("#infiniteScrollEnd").show();
+          }
+        }
+        
+        updateResultsInfo();
+        status.textContent = "";
+
+      } catch (err) {
+        console.error("Error loading products:", err);
+        status.textContent = `Failed to load products: ${err.message}`;
+        if (!append) {
+          productList.innerHTML = `<p>Failed to load products: ${err.message}</p>`;
+        }
+      } finally {
+        isLoading = false;
+        $("#infiniteScrollLoading").hide();
+      }
+    }
+
+    // ✅ Display Products (keeping original card design)
+    function displayProducts(products, append = false) {
+      const productList = document.getElementById("productList");
+      
+      if (!append) {
+        productList.innerHTML = "";
+      }
+
+      products.forEach(product => {
+        const card = document.createElement("div");
+        card.className = "product-card";
+
+        let mainImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='160' viewBox='0 0 240 160'%3E%3Crect width='240' height='160' fill='%23f5f5f5'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='14' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
+        if (product.image) {
+          const images = product.image.split(',');
+          mainImage = images.length > 0 ? `/uploads/${images[0]}` : mainImage;
+        }
+
+        card.innerHTML = `
+          <img src="${mainImage}" alt="${product.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'240\\' height=\\'160\\' viewBox=\\'0 0 240 160\\'%3E%3Crect width=\\'240\\' height=\\'160\\' fill=\\'%23f5f5f5\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-family=\\'Arial, sans-serif\\' font-size=\\'14\\' fill=\\'%23999\\'%3ENo Image%3C/text%3E%3C/svg%3E'" />
+          <h3>${product.name}</h3>
+          <p><strong>Brand:</strong> ${product.brand}</p>
+          <p><strong>Price:</strong> ₱${product.price}</p>
+          <p><strong>RAM:</strong> ${product.ram || 'N/A'}</p>
+          <p><strong>Storage:</strong> ${product.storage || 'N/A'}</p>
+          <p><strong>Status:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</p>
+          <button onclick="addToCart(${product.productID})">Add to Cart</button>
+          <button onclick="viewProduct(${product.productID})">View</button>
+          <button onclick="buyNow(${product.productID})">Buy Now</button>
+        `;
+
+        productList.appendChild(card);
+      });
+    }
+
+    // ✅ Append Products (Infinite Scroll)
+    function appendProducts(products) {
+      if (products.length === 0) return;
+
+      const newProducts = products.filter(product => !loadedProducts.has(product.productID));
+      newProducts.forEach(product => {
+        loadedProducts.add(product.productID);
+        allProducts.push(product);
+      });
+
+      displayProducts(newProducts, true);
+    }
+
+    // ✅ Update Pagination
+    function updatePagination() {
+      if (currentMode !== 'pagination') return;
+
+      const paginationHtml = createPaginationHTML();
+      $("#paginationBarTop, #paginationBarBottom").html(paginationHtml);
+      $("#paginationBarTop, #paginationBarBottom").show();
+    }
+
+    // ✅ Create Pagination HTML
+    function createPaginationHTML() {
+      if (totalPages <= 1) return '';
+
+      const startItem = (currentPage - 1) * itemsPerPage + 1;
+      const endItem = Math.min(currentPage * itemsPerPage, totalProducts);
+
+      let html = `
+        <div class="pagination-container">
+          <div class="pagination-info">
+            Showing ${startItem}-${endItem} of ${totalProducts} products
+          </div>
+          <nav aria-label="Product pagination">
+            <ul class="pagination justify-content-center mb-0">
+      `;
+
+      // Previous button
+      html += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+          <a class="page-link" href="#" onclick="changePage(${currentPage - 1})" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+      `;
+
+      // Page numbers
+      const maxVisiblePages = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        html += `
+          <li class="page-item ${i === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+          </li>
+        `;
+      }
+
+      // Next button
+      html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+          <a class="page-link" href="#" onclick="changePage(${currentPage + 1})" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+      `;
+
+      html += `
+            </ul>
+          </nav>
+        </div>
+      `;
+
+      return html;
+    }
+
+    // ✅ Change Page
+    function changePage(page) {
+      if (page < 1 || page > totalPages || page === currentPage) return;
+      
+      currentPage = page;
+      loadProducts();
+      
+      // Scroll to top
+      $('html, body').animate({ scrollTop: 0 }, 300);
+    }
+
+    // ✅ Switch View Mode
+    function switchToMode(mode) {
+      currentMode = mode;
+      currentPage = 1;
+      allProductsLoaded = false;
+      allProducts = [];
+      loadedProducts.clear();
+
+      // Update button states
+      $("#paginationModeBtn, #infiniteScrollModeBtn").removeClass('active');
+      if (mode === 'pagination') {
+        $("#paginationModeBtn").addClass('active');
+        $("#paginationBarTop, #paginationBarBottom").show();
+        $("#infiniteScrollLoading, #infiniteScrollEnd").hide();
+      } else {
+        $("#infiniteScrollModeBtn").addClass('active');
+        $("#paginationBarTop, #paginationBarBottom").hide();
+        $("#infiniteScrollLoading, #infiniteScrollEnd").hide();
+      }
+
+      loadProducts();
+    }
+
+    // ✅ Load More Products (Infinite Scroll)
+    function loadMoreProducts() {
+      if (allProductsLoaded || isLoading) return;
+      
+      currentPage++;
+      loadProducts(true);
+    }
+
+    // ✅ Update Results Info
+    function updateResultsInfo() {
+      const count = currentMode === 'pagination' ? 
+        `Page ${currentPage} of ${totalPages} (${totalProducts} total)` :
+        `Loaded ${allProducts.length} of ${totalProducts} products`;
+      
+      $("#resultsCount").text(count);
+    }
+
+    // ✅ Original functions (keeping your existing functionality)
+    function addToCart(productID) {
+      const userID = localStorage.getItem("userID");
+      const token = localStorage.getItem("jwtToken") || localStorage.getItem("token");
+      
+      if (!userID || !token) {
+        alert("You must be logged in to add to cart.");
+        return;
+      }
+
+      fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ userID, productID, quantity: 1 }),
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to add to cart");
+        return res.json();
+      })
+      .then(() => {
+        alert("Product added to cart!");
+        // Call updateCartIndicator if it exists (from header.html)
+        if (typeof updateCartIndicator === 'function') {
+          updateCartIndicator();
+        }
+      })
+      .catch(err => {
+        console.error("Error adding to cart:", err);
+        alert("Failed to add to cart.");
+      });
+    }
+
+    function viewProduct(productID) {
+      window.location.href = `/productDescription.html?id=${productID}`;
+    }
+
+    function buyNow(productId) {
+      localStorage.setItem("selectedProduct", productId);
+      window.location.href = `/checkout.html?id=${productId}`;
+    }
+
+    // ✅ jQuery Search/Autocomplete Implementation (keeping your original)
+    let searchTimeout;
+
+    // Load all products for filtering
+    async function loadAllProducts() {
+      try {
+        const res = await fetch("/api/products");
+        const products = await res.json();
+        allProducts = products;
+        console.log("Loaded products for search:", products.length);
+      } catch (err) {
+        console.error("Error loading products for search:", err);
+      }
+    }
+
+    // Initialize search functionality with jQuery
+    $(document).ready(function() {
+      console.log("jQuery loaded, initializing home page...");
+      
+      // Load header first
+      $("#header-container").load("header.html", function () {
+        console.log("Header loaded successfully");
+        const role = localStorage.getItem("role");
+        if (role === "admin") {
+          const editUsersLink = document.getElementById("editUsersLink");
+          if (editUsersLink) {
+            editUsersLink.style.display = "inline-block";
+          }
+        }
+      });
+      
+      // Load products
+      loadProducts();
+      
+      // Setup view mode toggle
+      $("#paginationModeBtn").click(function() {
+        switchToMode('pagination');
+      });
+
+      $("#infiniteScrollModeBtn").click(function() {
+        switchToMode('infinite');
+      });
+
+      // Setup infinite scroll with throttling
+      let scrollTimeout;
+      $(window).scroll(function() {
+        if (currentMode === 'infinite' && !isLoading && !allProductsLoaded) {
+          // Throttle scroll events to prevent excessive API calls
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => {
+            const scrollTop = $(window).scrollTop();
+            const windowHeight = $(window).height();
+            const documentHeight = $(document).height();
+            
+            // Check if user has scrolled near the bottom (within 100px)
+            if (scrollTop + windowHeight >= documentHeight - 100) {
+              console.log("Near bottom, loading more products...");
+              loadMoreProducts();
+            }
+          }, 100); // 100ms throttle
+        }
+      });
+      
+      // Search input event handler using jQuery
+      $("#searchBox").on("input", function() {
+        const query = $(this).val().trim();
+        console.log("Search query:", query);
+        
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+        
+        if (query.length === 0) {
+          hideAutocomplete();
+          currentSearchQuery = '';
+          currentPage = 1;
+          loadProducts(); // Reload all products
+          return;
+        }
+        
+        if (query.length < 2) {
+          hideAutocomplete();
+          return;
+        }
+        
+        // Show loading indicator
+        $("#autocompleteResults").html('<div class="no-results">Searching...</div>').show();
+        
+        // Debounce search to avoid too many API calls
+        searchTimeout = setTimeout(() => {
+          console.log("Performing search for:", query);
+          performSearch(query);
+        }, 300);
+      });
+      
+      // Hide autocomplete when clicking outside
+      $(document).on("click", function(e) {
+        if (!$(e.target).closest(".search-container").length) {
+          hideAutocomplete();
+        }
+      });
+      
+      // Handle keyboard navigation
+      $("#searchBox").on("keydown", function(e) {
+        const suggestions = $("#autocompleteResults .autocomplete-suggestion");
+        const current = suggestions.filter(".active");
+        
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (current.length === 0) {
+            suggestions.first().addClass("active");
+          } else {
+            current.removeClass("active");
+            if (current.next().length > 0) {
+              current.next().addClass("active");
+            } else {
+              suggestions.first().addClass("active");
+            }
+          }
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (current.length === 0) {
+            suggestions.last().addClass("active");
+          } else {
+            current.removeClass("active");
+            if (current.prev().length > 0) {
+              current.prev().addClass("active");
+            } else {
+              suggestions.last().addClass("active");
+            }
+          }
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          if (current.length > 0) {
+            current.click();
+          } else {
+            // Perform search with current input
+            const query = $(this).val().trim();
+            if (query.length >= 2) {
+              executeSearch(query);
+              hideAutocomplete();
+            }
+          }
+        } else if (e.key === "Escape") {
+          hideAutocomplete();
+          $(this).blur();
+        }
+      });
+    });
+
+    // Perform search via API using jQuery
+    async function performSearch(query) {
+      try {
+        console.log("Making API call to:", `/api/products/search/${encodeURIComponent(query)}`);
+        
+        // Use jQuery.ajax for more control
+        $.ajax({
+          url: `/api/products/search/${encodeURIComponent(query)}`,
+          method: 'GET',
+          dataType: 'json',
+          success: function(data) {
+            console.log("Search API response:", data);
+            if (data.success && data.products) {
+              displayAutocomplete(data.products, query);
+            } else {
+              console.log("No products found or API error");
+              $("#autocompleteResults").html('<div class="no-results">No products found</div>').show();
+            }
+          },
+          error: function(xhr, status, error) {
+            console.error("Search API error:", error, xhr.responseText);
+            hideAutocomplete();
+          }
+        });
+      } catch (err) {
+        console.error("Search error:", err);
+        hideAutocomplete();
+      }
+    }
+
+    // Execute search (used when Enter is pressed or suggestion is clicked)
+    function executeSearch(query) {
+      currentSearchQuery = query;
+      currentPage = 1;
+      allProductsLoaded = false;
+      allProducts = [];
+      loadedProducts.clear();
+      loadProducts();
+    }
+
+    // Display autocomplete suggestions using jQuery
+    function displayAutocomplete(products, query) {
+      const resultsContainer = $("#autocompleteResults");
+      console.log("Displaying autocomplete for", products.length, "products");
+      
+      if (!products || products.length === 0) {
+        resultsContainer.html('<div class="no-results">No products found</div>').show();
+        return;
+      }
+      
+      let html = "";
+      products.forEach(product => {
+        const highlightedName = highlightMatch(product.name, query);
+        const highlightedBrand = highlightMatch(product.brand, query);
+        
+        html += `
+          <div class="autocomplete-suggestion" data-product-id="${product.productID}">
+            <div class="suggestion-name">${highlightedName}</div>
+            <div class="suggestion-details">
+              ${highlightedBrand} • ₱${product.price} • ${product.ram || 'N/A'} • ${product.storage || 'N/A'}
+            </div>
+          </div>
+        `;
+      });
+      
+      resultsContainer.html(html).show();
+      console.log("Autocomplete suggestions displayed");
+      
+      // Add click handlers to suggestions using jQuery
+      $(".autocomplete-suggestion").off("click").on("click", function() {
+        const productId = $(this).data("product-id");
+        const productName = $(this).find(".suggestion-name").text().replace(/<[^>]*>/g, ''); // Remove HTML tags
+        
+        console.log("Suggestion clicked:", productName);
+        
+        // Set search box value and hide autocomplete
+        $("#searchBox").val(productName);
+        hideAutocomplete();
+        
+        // Execute search
+        executeSearch(productName);
+      });
+      
+      // Add hover effects using jQuery
+      $(".autocomplete-suggestion").off("mouseenter").on("mouseenter", function() {
+        $(".autocomplete-suggestion").removeClass("active");
+        $(this).addClass("active");
+      });
+    }
+
+    // Hide autocomplete suggestions
+    function hideAutocomplete() {
+      $("#autocompleteResults").hide().html("");
+    }
+
+    // Highlight matching text
+    function highlightMatch(text, query) {
+      if (!text || !query) return text;
+      const regex = new RegExp(`(${escapeRegex(query)})`, "gi");
+      return text.replace(regex, '<span class="search-highlight">$1</span>');
+    }
+
+    // Escape special regex characters
+    function escapeRegex(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+  </script>
+
+
+</body>
+</html>

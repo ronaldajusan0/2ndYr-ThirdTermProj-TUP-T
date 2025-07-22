@@ -1,0 +1,222 @@
+<<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6fc; }
+    h1 { color: #333; }
+    table { width: 100%; }
+    button {
+      margin: 2px;
+      padding: 5px 10px;
+      background-color: #6c63ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #574ee0;
+    }
+  </style>
+</head>
+<body style="display: none;">
+  <script>
+    // ✅ IMMEDIATE admin check - runs before anything else loads
+    console.log("🚀 IMMEDIATE admin check starting for admin.html...");
+    
+    // Get auth data immediately
+    const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                  sessionStorage.getItem("token") || localStorage.getItem("token");
+    const role = sessionStorage.getItem("role") || localStorage.getItem("role");
+    
+    console.log("Token present:", !!token);
+    console.log("User role:", role);
+    console.log("sessionStorage contents:", {
+      jwtToken: sessionStorage.getItem("jwtToken"),
+      token: sessionStorage.getItem("token"),
+      role: sessionStorage.getItem("role"),
+      name: sessionStorage.getItem("name")
+    });
+    console.log("localStorage contents:", {
+      jwtToken: localStorage.getItem("jwtToken"),
+      token: localStorage.getItem("token"),
+      role: localStorage.getItem("role"),
+      name: localStorage.getItem("name")
+    });
+    
+    // If not admin, redirect immediately
+    if (!token) {
+      console.log("❌ No token - redirecting to login");
+      alert("Please log in to access this page.");
+      window.location.replace("/login.html");
+    } else if (role !== "admin") {
+      console.log("❌ Not admin - redirecting to home");
+      alert(`Access denied. Administrator privileges required.\nYour role: ${role}\n\nRedirecting to home page...`);
+      window.location.replace("/home.html");
+    } else {
+      console.log("✅ Admin access granted - showing page");
+      document.body.style.display = "block";
+    }
+  </script>
+
+  <!-- ✅ Header -->
+  <div id="header-container"></div>
+
+  <h1>Admin Panel - User Management</h1>
+
+  <table id="userTable" class="display">
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Email</th><th>Contact</th><th>Role</th><th>Status</th><th>Actions</th>
+      </tr>
+    </thead>
+  </table>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    $(document).ready(() => {
+      // Get token for API calls (already authenticated by immediate check above)
+      const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                    sessionStorage.getItem("token") || localStorage.getItem("token");
+
+      // ✅ Load Header and show admin-only link
+      $("#header-container").load("header.html", function () {
+        const role = sessionStorage.getItem("role") || localStorage.getItem("role");
+        if (role === "admin") {
+          const editUsersLink = document.getElementById("editUsersLink");
+          const dashboardLink = document.getElementById("dashboardLink");
+          if (editUsersLink) editUsersLink.style.display = "inline-block";
+          if (dashboardLink) dashboardLink.style.display = "inline-block";
+        }
+      });
+
+      $.ajax({
+        url: "/api/users",
+        method: "GET",
+        headers: {
+          Authorization: "Bearer " + token
+        },
+        success: function (data) {
+          $('#userTable').DataTable({
+            data,
+            columns: [
+              { data: "userID" },
+              { data: "name" },
+              { data: "email" },
+              { data: "contactNumber" },
+              { data: "role" },
+              { data: "status" },
+              {
+                data: null,
+                render: function (row) {
+                  return `
+                    <button onclick="changeRole(${row.userID}, '${row.role}')">Change Role</button>
+                    <button onclick="toggleStatus(${row.userID}, '${row.status}')">Toggle Status</button>
+                  `;
+                }
+              }
+            ]
+          });
+        },
+        error: function (xhr) {
+          if (xhr.status === 401) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Authentication Expired',
+              text: 'Your session has expired. Please log in again.',
+              confirmButtonText: 'Go to Login',
+              confirmButtonColor: '#6c63ff'
+            }).then(() => {
+              window.location.href = "/login.html";
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error Loading Users',
+              text: 'Failed to load user data. Please try again.',
+              confirmButtonText: 'Retry',
+              confirmButtonColor: '#6c63ff'
+            });
+          }
+        }
+      });
+    });
+
+    function changeRole(userID, currentRole) {
+      const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                    sessionStorage.getItem("token") || localStorage.getItem("token");
+      const newRole = currentRole === "admin" ? "user" : "admin";
+      
+      Swal.fire({
+        title: 'Change User Role',
+        text: `Change role from "${currentRole}" to "${newRole}"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#6c63ff',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, change it!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: `/api/users/${userID}/role`,
+            method: "PUT",
+            headers: {
+              Authorization: "Bearer " + token
+            },
+            contentType: "application/json",
+            data: JSON.stringify({ role: newRole }),
+            success: () => {
+              Swal.fire('Updated!', 'User role has been updated.', 'success');
+              location.reload();
+            },
+            error: () => {
+              Swal.fire('Error!', 'Failed to update user role.', 'error');
+            }
+          });
+        }
+      });
+    }
+
+    function toggleStatus(userID, currentStatus) {
+      const token = sessionStorage.getItem("jwtToken") || localStorage.getItem("jwtToken") ||
+                    sessionStorage.getItem("token") || localStorage.getItem("token");
+      const newStatus = currentStatus === "active" ? "inactive" : "active";
+      
+      Swal.fire({
+        title: 'Change User Status',
+        text: `Change status from "${currentStatus}" to "${newStatus}"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#6c63ff',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, change it!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: `/api/users/${userID}/status`,
+            method: "PUT",
+            headers: {
+              Authorization: "Bearer " + token
+            },
+            contentType: "application/json",
+            data: JSON.stringify({ status: newStatus }),
+            success: () => {
+              Swal.fire('Updated!', 'User status has been updated.', 'success');
+              location.reload();
+            },
+            error: () => {
+              Swal.fire('Error!', 'Failed to update user status.', 'error');
+            }
+          });
+        }
+      });
+    }
+  </script>
+</body>
+</html>

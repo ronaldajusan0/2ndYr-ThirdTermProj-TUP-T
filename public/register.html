@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Registration</title>
+  <style>
+    :root {
+      --primary: #6c63ff;
+      --background: #f4f6fc;
+      --card: #fff;
+      --text: #333;
+      --input-border: #ccc;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--background);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .register-card {
+      background: var(--card);
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .register-card h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: var(--primary);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="password"],
+    input[type="file"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1.5px solid var(--input-border);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #524ae0;
+    }
+
+    /* ✅ jQuery Validation Error Styles */
+    .error {
+      color: #dc3545;
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    }
+    
+    input.error {
+      border-color: #dc3545 !important;
+      background-color: #ffe6e6 !important;
+    }
+    
+    input.valid {
+      border-color: #28a745 !important;
+      background-color: #e6ffe6 !important;
+    }
+
+    #status {
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--input-border);
+    }
+
+    .login-link a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- Include Header -->
+  <!-- <div id="header-container"></div> -->
+
+  <div class="register-card">
+    <h2>User Registration</h2>
+    <form id="registerForm" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="name">Full Name *</label>
+        <input type="text" name="name" id="name" required minlength="2" maxlength="100" pattern="^[a-zA-Z\s]+$" placeholder="Enter your full name (letters only)" />
+      </div>
+      <div class="form-group">
+        <label for="age">Age *</label>
+        <input type="text" name="age" id="age" required pattern="^[0-9]+$" placeholder="Enter your age (numbers only)" />
+      </div>
+      <div class="form-group">
+        <label for="address">Address *</label>
+        <input type="text" name="address" id="address" required minlength="10" maxlength="200" placeholder="Enter your complete address" />
+      </div>
+      <div class="form-group">
+        <label for="email">Email Address *</label>
+        <input type="text" name="email" id="email" required pattern="^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z]+$" placeholder="e.g., john123@gmail.com (letters, numbers, @ and . allowed)" />
+      </div>
+      <div class="form-group">
+        <label for="contactNumber">Contact Number *</label>
+        <input type="text" name="contactNumber" id="contactNumber" required pattern="^(\+63|0)[0-9]{10}$" placeholder="e.g., 09123456789 or +639123456789" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password *</label>
+        <input type="password" name="password" id="password" required minlength="6" maxlength="50" pattern="^[a-zA-Z0-9]+$" placeholder="Letters and numbers only (no special characters)" />
+      </div>
+      <div class="form-group">
+        <label for="profilePic">Profile Picture *</label>
+        <input type="file" name="profilePic" id="profilePic" accept="image/jpeg,image/jpg,image/png,image/gif" required />
+        <small>Max file size: 5MB. Supported formats: JPG, PNG, GIF</small>
+      </div>
+      <button type="submit">Register Account</button>
+      <div id="status"></div>
+    </form>
+    
+    <div class="login-link">
+      <p>Already have an account? <a href="/login.html">Click here to login</a></p>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/additional-methods.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    // ✅ Load Header (commented out for now)
+    // $(document).ready(function() {
+    //   $("#header-container").load("header.html");
+    // });
+
+    // ✅ jQuery Validation for User Registration
+    $(document).ready(function() {
+      
+      // Custom validation methods
+      $.validator.addMethod("filesize", function(value, element, param) {
+        if (element.files.length === 0) return true;
+        return element.files[0].size <= param;
+      }, "File size must be less than 5MB");
+
+      $.validator.addMethod("strictEmail", function(value, element) {
+        // Allow alphabetical characters, numbers, @ and . for email like john123@gmail.com
+        return /^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z]+$/.test(value);
+      }, "Email must contain only letters, numbers, @ and . (e.g., john123@gmail.com)");
+
+      $.validator.addMethod("alphabetOnly", function(value, element) {
+        // Only allow alphabetical characters and spaces for names
+        return /^[a-zA-Z\s]+$/.test(value);
+      }, "Name can only contain letters and spaces");
+
+      $.validator.addMethod("noSpecialChars", function(value, element) {
+        // No special characters for password, only letters and numbers
+        return /^[a-zA-Z0-9]+$/.test(value);
+      }, "Password can only contain letters and numbers (no special characters)");
+
+      $.validator.addMethod("numbersOnly", function(value, element) {
+        // Only numbers for age
+        return /^[0-9]+$/.test(value);
+      }, "Age must contain only numbers");
+
+      // Initialize validation
+      $("#registerForm").validate({
+        rules: {
+          name: {
+            required: true,
+            minlength: 2,
+            maxlength: 100,
+            alphabetOnly: true
+          },
+          age: {
+            required: true,
+            min: 13,
+            max: 120,
+            numbersOnly: true
+          },
+          address: {
+            required: true,
+            minlength: 10,
+            maxlength: 200
+          },
+          email: {
+            required: true,
+            strictEmail: true,
+            maxlength: 100
+          },
+          contactNumber: {
+            required: true,
+            pattern: /^(\+63|0)[0-9]{10}$/
+          },
+          password: {
+            required: true,
+            minlength: 6,
+            maxlength: 50,
+            noSpecialChars: true
+          },
+          profilePic: {
+            required: true,
+            accept: "image/jpeg,image/jpg,image/png,image/gif",
+            filesize: 5242880 // 5MB in bytes
+          }
+        },
+        messages: {
+          name: {
+            required: "Full name is required",
+            minlength: "Name must be at least 2 characters",
+            maxlength: "Name cannot exceed 100 characters",
+            alphabetOnly: "Name can only contain letters and spaces"
+          },
+          age: {
+            required: "Age is required",
+            min: "You must be at least 13 years old",
+            max: "Age cannot exceed 120",
+            numbersOnly: "Age must contain only numbers"
+          },
+          address: {
+            required: "Address is required",
+            minlength: "Address must be at least 10 characters",
+            maxlength: "Address cannot exceed 200 characters"
+          },
+          email: {
+            required: "Email address is required",
+            strictEmail: "Email must contain only letters, numbers, @ and . (e.g., john123@gmail.com)",
+            maxlength: "Email cannot exceed 100 characters"
+          },
+          contactNumber: {
+            required: "Contact number is required",
+            pattern: "Please enter a valid Philippine mobile number (e.g., 09123456789)"
+          },
+          password: {
+            required: "Password is required",
+            minlength: "Password must be at least 6 characters",
+            maxlength: "Password cannot exceed 50 characters",
+            noSpecialChars: "Password can only contain letters and numbers (no special characters)"
+          },
+          profilePic: {
+            required: "Profile picture is required",
+            accept: "Only JPG, PNG, and GIF images are allowed"
+          }
+        },
+        errorClass: "error",
+        validClass: "valid",
+        errorPlacement: function(error, element) {
+          error.insertAfter(element);
+        },
+        highlight: function(element) {
+          $(element).addClass("error").removeClass("valid");
+        },
+        unhighlight: function(element) {
+          $(element).removeClass("error").addClass("valid");
+        },
+        submitHandler: function(form) {
+          // Show loading state
+          const submitBtn = $(form).find('button[type="submit"]');
+          const originalText = submitBtn.text();
+          submitBtn.text('Creating Account...').prop('disabled', true);
+          
+          // Clear previous status messages
+          $("#status").text('').css("color", "");
+
+          const formData = new FormData(form);
+
+          console.log("📝 Submitting registration form...");
+
+          $.ajax({
+            url: "/api/register",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+              console.log("✅ Registration successful:", response);
+              
+              // Show SweetAlert success message
+              Swal.fire({
+                icon: 'success',
+                title: 'Registration Successful!',
+                text: 'Your account has been created successfully. Redirecting to login page...',
+                timer: 2500,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                allowOutsideClick: false
+              }).then(() => {
+                window.location.href = "/login.html";
+              });
+            },
+            error: function(xhr) {
+              console.error("❌ Registration failed:", xhr);
+              console.error("Status:", xhr.status);
+              console.error("Response:", xhr.responseText);
+              
+              let errorMessage = "Registration failed. Please try again.";
+              
+              // Try to parse the error message from the response
+              if (xhr.responseJSON && xhr.responseJSON.error) {
+                errorMessage = xhr.responseJSON.error;
+              } else if (xhr.responseText) {
+                try {
+                  const errorData = JSON.parse(xhr.responseText);
+                  if (errorData.error) {
+                    errorMessage = errorData.error;
+                  }
+                } catch (e) {
+                  console.error("Failed to parse error response:", e);
+                }
+              }
+              
+              // Show SweetAlert error message
+              Swal.fire({
+                icon: 'error',
+                title: 'Registration Failed',
+                text: errorMessage,
+                confirmButtonText: 'Try Again',
+                confirmButtonColor: '#6c63ff'
+              });
+              
+              submitBtn.text(originalText).prop('disabled', false);
+            }
+          });
+        }
+      });
+
+      // Real-time file validation
+      $("#profilePic").on("change", function() {
+        const file = this.files[0];
+        if (file && file.size > 5242880) { // 5MB
+          $(this).addClass("error");
+          $(this).after(`<label class="error">File size is too large (max 5MB)</label>`);
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

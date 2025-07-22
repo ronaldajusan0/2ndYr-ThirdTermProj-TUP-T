@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Checkout</title>
+  <style>
+    body { font-family: 'Segoe UI'; padding: 20px; background: #f0f4ff; }
+    h1 { color: #6c63ff; text-align: center; }
+    .section {
+      background: #fff; padding: 20px; border-radius: 10px;
+      margin-bottom: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid #ccc; text-align: left; }
+    button {
+      padding: 10px 16px; background: #6c63ff;
+      color: white; border: none; border-radius: 6px; cursor: pointer;
+    }
+    #userInfo p { margin: 4px 0; }
+    .edit-btn {
+      background-color: #ff9800;
+      margin-left: 10px;
+    }
+    .edit-btn:hover {
+      background-color: #e68900;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧾 Checkout</h1>
+
+  <div class="section" id="cartSummary">
+    <h2>Cart Summary</h2>
+    <div id="cartItems"></div>
+    <p id="checkoutTotal"></p>
+  </div>
+
+  <div class="section" id="userDetails">
+    <h2>Customer Information</h2>
+    <div id="userInfo"></div>
+    <button class="edit-btn" onclick="window.location.href='editProfile.html'">Edit Info</button>
+  </div>
+
+  <div class="section">
+    <h2>Payment Method</h2>
+    <label><input type="radio" name="paymentMethod" value="cod" checked> Cash on Delivery (COD)</label><br>
+    <label><input type="radio" name="paymentMethod" value="online"> Online Payment</label>
+  </div>
+
+  <div style="text-align: center;">
+    <button onclick="confirmCheckout()">Confirm Purchase</button>
+  </div>
+
+  <script>
+    async function loadCheckout() {
+      const userID = localStorage.getItem("userID");
+      const token = localStorage.getItem("jwtToken") || localStorage.getItem("token");
+      
+      if (!userID || !token) {
+        alert("You are not logged in.");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      try {
+        // Fetch cart
+        const cartRes = await fetch(`/api/cart/${userID}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        const cartData = await cartRes.json();
+        const { items, totalAmount } = cartData;
+
+        if (!items || items.length === 0) {
+          document.getElementById("cartItems").innerHTML = "<p>Your cart is empty.</p>";
+          document.getElementById("checkoutTotal").innerText = "";
+          return;
+        }
+
+        let html = `<table><tr><th>Name</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr>`;
+        items.forEach(item => {
+          html += `
+            <tr>
+              <td>${item.name}</td>
+              <td>₱${item.price}</td>
+              <td>${item.quantity}</td>
+              <td>₱${(item.totalItem).toFixed(2)}</td>
+            </tr>`;
+        });
+        html += `</table>`;
+        document.getElementById("cartItems").innerHTML = html;
+        document.getElementById("checkoutTotal").innerText = "Total: ₱" + totalAmount.toFixed(2);
+
+        // Fetch user
+        const userRes = await fetch(`/api/users/${userID}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        const { user } = await userRes.json();
+
+
+        document.getElementById("userInfo").innerHTML = `
+          <p><strong>Name:</strong> ${user.name}</p>
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p><strong>Contact:</strong> ${user.contactNumber}</p>
+          <p><strong>Address:</strong> ${user.address}</p>
+        `;
+
+      } catch (err) {
+        console.error("Error loading checkout:", err);
+        document.getElementById("cartItems").innerHTML = "<p>Failed to load cart.</p>";
+        document.getElementById("userInfo").innerHTML = "<p>Failed to load user info.</p>";
+        alert("Error loading checkout page.");
+      }
+    }
+
+    async function confirmCheckout() {
+      const userID = localStorage.getItem("userID");
+      const token = localStorage.getItem("jwtToken") || localStorage.getItem("token");
+
+      if (!userID || !token) {
+        alert("Please log in to continue.");
+        window.location.href = "/login.html";
+        return;
+      }
+
+      const method = document.querySelector('input[name="paymentMethod"]:checked').value;
+
+      try {
+        const userRes = await fetch(`/api/users/${userID}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+            const { user } = await userRes.json();
+
+
+        if (!user.address || user.address.length < 10) {
+          alert("Please update your profile with a valid address.");
+          return;
+        }
+
+        if (!/^(\+63|0)[0-9]{10}$/.test(user.contactNumber)) {
+          alert("Please enter a valid Philippine contact number.");
+          return;
+        }
+
+        const cartRes = await fetch(`/api/cart/${userID}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        const cart = await cartRes.json();
+
+        if (!cart.items || cart.items.length === 0) {
+          alert("Cart is empty.");
+          return;
+        }
+
+        const confirmMsg = `
+Payment Method: ${method.toUpperCase()}
+Total: ₱${cart.totalAmount.toFixed(2)}
+Address: ${user.address}
+Contact: ${user.contactNumber}
+
+Place this order?
+        `.trim();
+
+        if (!confirm(confirmMsg)) return;
+
+        const res = await fetch("/api/orders/create", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            userID,
+            paymentMethod: method,
+            address: user.address,
+            items: cart.items,
+            userEmail: user.email
+          })
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          alert("Order placed!");
+          window.location.href = `/receipt.html?orderID=${result.orderID}`;
+        } else {
+          throw new Error(result.message);
+        }
+
+      } catch (err) {
+        console.error("Checkout error:", err);
+        alert("Checkout failed.");
+      }
+    }
+
+    loadCheckout();
+  </script>
+
+</body>
+</html>
