@@ -128,7 +128,7 @@ router.get("/products/paginated", (req, res) => {
 
     // Get paginated products
     const sql = `
-      SELECT p.productID, p.name, p.brand, p.price, p.description, p.quantity, p.availability,
+      SELECT p.productID, p.name, p.brand, p.price, p.ram, p.storage, p.description, p.quantity, p.availability,
              GROUP_CONCAT(pi.filename) as image
       FROM products p
       LEFT JOIN product_images pi ON p.productID = pi.productID
@@ -187,5 +187,6 @@ router.get("/products/:id", (req, res) => {
 router.post("/products", isAdminStrict, upload.array("images"), productController.createProduct);
 router.post("/products/:id", isAdminStrict, upload.array("images"), productController.updateProduct);
 router.delete("/products/:id", isAdminStrict, productController.deleteProduct);
-
+router.get('/', productController.getProducts);
+router.get('/:id', productController.getProductByID);
 module.exports = router;

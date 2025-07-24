@@ -4,7 +4,7 @@ const db = require("../config/db");
 const nodemailer = require("nodemailer");
 const PDFDocument = require("pdfkit");
 const { isAuthenticated, isAdmin, isOwnerOrAdmin } = require("../middlewares/auth");
-
+const orderController = require("../controllers/orderController");
 const transporter = nodemailer.createTransport({
   host: "smtp.mailtrap.io",
   port: 587,
@@ -187,5 +187,74 @@ router.get("/orderinfo/:orderID", (req, res) => {
     res.json(order);
   });
 });
+
+// Get order history for user
+// In controllers/orderController.js
+
+exports.getOrderHistory = (req, res) => {
+  const { userID } = req.params;
+
+  const sql = `
+    SELECT
+      o.orderID,
+      o.orderDate        AS orderDate,
+      o.paymentMethod    AS paymentMethod,   -- ← include this
+      o.shippingAddress  AS shippingAddress, -- ← and this
+      o.status           AS status,
+      oi.productID       AS productID,
+      oi.quantity        AS quantity,
+      oi.priceAtPurchase AS priceAtPurchase,
+      p.name             AS productName
+    FROM orders o
+    JOIN orderinfo oi ON o.orderID = oi.orderID
+    JOIN products    p  ON oi.productID = p.productID
+    WHERE o.userID = ?
+    ORDER BY o.orderDate DESC
+  `;
+
+  db.query(sql, [userID], (err, rows) => {
+    if (err) {
+      console.error("❌ Error fetching order history:", err);
+      return res.status(500).json({ message: "Database error", error: err });
+    }
+
+    // Group rows by orderID and build the response objects
+    const ordersMap = {};
+    rows.forEach(r => {
+      if (!ordersMap[r.orderID]) {
+        ordersMap[r.orderID] = {
+          orderID:         r.orderID,
+          orderDate:       r.orderDate,
+          paymentMethod:   r.paymentMethod,     // ← set it here
+          shippingAddress: r.shippingAddress,   // ← and here
+          status:          r.status,
+          totalAmount:     0,
+          items:           []
+        };
+      }
+      const ord = ordersMap[r.orderID];
+      ord.items.push({
+        productID:       r.productID,
+        name:            r.productName,
+        quantity:        r.quantity,
+        priceAtPurchase: r.priceAtPurchase
+      });
+      ord.totalAmount += r.quantity * r.priceAtPurchase;
+    });
+
+    res.json({
+      success: true,
+      orders: Object.values(ordersMap)
+    });
+  });
+};
+
+
+
+router.get(
+  '/history/:userID',
+  isAuthenticated,
+  orderController.getOrderHistory
+);
 
 module.exports = router;

@@ -1,13 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const feedbackController = require('../controllers/feedbackController');
 
+router.post('/', feedbackController.submitFeedback);
+router.get('/', feedbackController.getFeedbackByUser);
 // Get feedback for a specific email and orderID
-router.get('/', (req, res) => {
+// Get feedback for a specific email, orderID, and productID
+// controllers/feedbackController.js
+
+exports.getFeedbackByUser = (req, res) => {
   const { email, orderID } = req.query;
 
   if (!email || !orderID) {
-    return res.status(400).json({ message: "Email and Order ID required." });
+    return res.status(400).json({ error: "Missing required parameters" });
   }
 
   const sql = `
@@ -18,10 +24,16 @@ router.get('/', (req, res) => {
   `;
 
   db.query(sql, [email, orderID], (err, results) => {
-    if (err) return res.status(500).json({ message: "Database error", error: err });
+    if (err) {
+      console.error("Error fetching feedback:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
     res.json(results);
   });
-});
+};
+
+
+
 // Update a feedback entry by feedbackID
 router.patch('/:id', (req, res) => {
   const feedbackID = req.params.id;
@@ -69,5 +81,8 @@ router.delete('/:id', (req, res) => {
   });
 });
 
-
+router.post('/', feedbackController.submitFeedback);
+router.get('/', feedbackController.getFeedbackByUser);
+router.patch('/:id', feedbackController.updateFeedback); // move this logic to controller too (optional)
+router.delete('/:id', feedbackController.deleteFeedback);
 module.exports = router;

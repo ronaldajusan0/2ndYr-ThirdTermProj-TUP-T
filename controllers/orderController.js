@@ -71,3 +71,60 @@ We will notify you once the order is shipped.
     return res.status(500).json({ success: false, message: "Internal server error." });
   }
 };
+
+
+// GET /api/orders/history/:userID
+exports.getOrderHistory = (req, res) => {
+  const { userID } = req.params;
+
+  const sql = `
+    SELECT 
+      o.orderID,
+      o.orderDate,
+      o.paymentMethod,
+      o.shippingAddress,
+      o.status,
+      oi.productID,
+      oi.quantity,
+      oi.priceAtPurchase,
+      p.name AS productName
+    FROM orders o
+    JOIN orderinfo oi ON o.orderID = oi.orderID
+    JOIN products p   ON oi.productID = p.productID
+    WHERE o.userID = ?
+    ORDER BY o.orderDate DESC
+  `;
+
+  db.query(sql, [userID], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+
+    // group rows by orderID
+    const ordersMap = {};
+    rows.forEach(r => {
+      if (!ordersMap[r.orderID]) {
+        ordersMap[r.orderID] = {
+          orderID:        r.orderID,
+          orderDate:      r.orderDate,
+          paymentMethod:  r.paymentMethod,
+          shippingAddress:r.shippingAddress,
+          status:         r.status,
+          totalAmount:    0,
+          items:          []
+        };
+      }
+      const ord = ordersMap[r.orderID];
+      ord.items.push({
+        productID:       r.productID,
+        name:            r.productName,
+        quantity:        r.quantity,
+        priceAtPurchase: r.priceAtPurchase
+      });
+      ord.totalAmount += r.quantity * r.priceAtPurchase;
+    });
+
+    res.json({
+      success: true,
+      orders: Object.values(ordersMap)
+    });
+  });
+};

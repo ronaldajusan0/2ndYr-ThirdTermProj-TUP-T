@@ -229,68 +229,80 @@
   <script>
     let productToDeleteId = null;
 
-    async function loadProducts() {
-      const productList = document.getElementById("productList");
-      const status = document.getElementById("status");
-      productList.innerHTML = "<p>Loading...</p>";
+   async function loadProducts() {
+  const productList = document.getElementById("productList");
+  const status = document.getElementById("status");
+  productList.innerHTML = "<p>Loading...</p>";
 
-      try {
-        const res = await fetch("/api/products");
-        const products = await res.json();
+  try {
+    const res = await fetch("/api/products");
+    const products = await res.json();
 
-        if (products.length === 0) {
-          productList.innerHTML = "<p>No products found.</p>";
-          return;
-        }
-
-        productList.innerHTML = "";
-
-        products.forEach(product => {
-          const card = document.createElement("div");
-          card.className = "product-card";
-
-          // Find main photo
-          let mainImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='160' viewBox='0 0 240 160'%3E%3Crect width='240' height='160' fill='%23f5f5f5'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='14' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
-          if (product.images && product.images.length > 0) {
-            const main = product.images.find(img => img.isMain == 1);
-            mainImage = main
-              ? `/uploads/${main.filename}`
-              : `/uploads/${product.images[0].filename}`;
-          }
-
-          // Thumbnails HTML
-          let thumbnails = "";
-          if (product.images && product.images.length > 1) {
-            thumbnails = `<div class="thumbnails" style="display:flex;justify-content:center;gap:6px;margin-top:8px;">`;
-            product.images.forEach((img, idx) => {
-              thumbnails += `<img src="/uploads/${img.filename}" alt="thumb" style="width:40px;height:40px;object-fit:cover;cursor:pointer;border-radius:4px;border:1px solid #ccc;" onclick="showMainImage(this, '${img.filename}', ${product.productID})" />`;
-            });
-            thumbnails += `</div>`;
-          }
-
-          card.innerHTML = `
-            <img id="main-img-${product.productID}" src="${mainImage}" alt="${product.name}" />
-            ${thumbnails}
-            <h3>${product.name}</h3>
-            <p><strong>Brand:</strong> ${product.brand}</p>
-            <p><strong>Price:</strong> ₱${parseFloat(product.price).toFixed(2)}</p>
-            <p><strong>RAM:</strong> ${product.ram}</p>
-            <p><strong>Storage:</strong> ${product.storage}</p>
-            <p><strong>Quantity:</strong> ${product.quantity}</p>
-            <p><strong>Status:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</p>
-            <div class="actions">
-              <button onclick="editProduct(${product.productID})">✏️ Edit</button>
-              <button onclick="openDeleteModal(${product.productID}, '${product.name.replace(/'/g, "\\'")}')">🗑 Delete</button>
-            </div>
-          `;
-
-          productList.appendChild(card);
-        });
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Failed to load products.";
-      }
+    if (products.length === 0) {
+      productList.innerHTML = "<p>No products found.</p>";
+      return;
     }
+
+    productList.innerHTML = "";
+
+    products.forEach(product => {
+      const card = document.createElement("div");
+      card.className = "product-card";
+
+      // Find main image
+      let mainImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='160' viewBox='0 0 240 160'%3E%3Crect width='240' height='160' fill='%23f5f5f5'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='14' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
+      if (product.images && product.images.length > 0) {
+        const main = product.images.find(img => img.isMain == 1);
+        mainImage = main
+          ? `/uploads/${main.filename}`
+          : `/uploads/${product.images[0].filename}`;
+      }
+
+      // Build thumbnail HTML
+      let thumbnails = "";
+      if (product.images && product.images.length > 1) {
+        thumbnails = `<div class="thumbnails">`;
+        product.images.forEach((img, idx) => {
+          thumbnails += `<img src="/uploads/${img.filename}" alt="thumb" onclick="showMainImage(this, '${img.filename}', ${product.productID})" />`;
+        });
+        thumbnails += `</div>`;
+      }
+
+      // Card content
+      card.innerHTML = `
+        <img id="main-img-${product.productID}" src="${mainImage}" alt="${product.name}" />
+        ${thumbnails}
+        <h3>${product.name}</h3>
+        <p><strong>Brand:</strong> ${product.brand}</p>
+        <p><strong>Price:</strong> ₱${parseFloat(product.price).toFixed(2)}</p>
+        <p><strong>RAM:</strong> ${product.ram}</p>
+        <p><strong>Storage:</strong> ${product.storage}</p>
+        <p><strong>Quantity:</strong> ${product.quantity}</p>
+        <p><strong>Status:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</p>
+        <div class="actions">
+          <button onclick="editProduct(${product.productID})">✏️ Edit</button>
+          <button class="delete-btn" data-id="${product.productID}" data-name="${product.name.replace(/"/g, '&quot;')}">🗑 Delete</button>
+        </div>
+      `;
+
+      productList.appendChild(card);
+
+      // ✅ Bind delete button for this card after append
+      const deleteBtn = card.querySelector(".delete-btn");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", () => {
+          const id = deleteBtn.getAttribute("data-id");
+          const name = deleteBtn.getAttribute("data-name");
+          openDeleteModal(id, name);
+        });
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Failed to load products.";
+  }
+}
+
 
     // ✅ Enhanced Delete Modal Functions
     function openDeleteModal(id, productName) {
@@ -345,6 +357,8 @@
           loadProducts(); // refresh list
           $("#status").text(result.message || "Product deleted successfully").css("color", "green");
           
+           deleteBtn.textContent = originalText;
+  deleteBtn.disabled = false;
           // Clear status after 3 seconds
           setTimeout(() => {
             $("#status").text("");

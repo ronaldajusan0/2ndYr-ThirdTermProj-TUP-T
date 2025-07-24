@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Order History</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    .order { border: 1px solid #ddd; margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; }
+    .order h2 { margin-top: 0; }
+    .item { margin-left: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>My Order History</h1>
+  <div id="ordersContainer">Loading...</div>
+
+  <script>
+    async function loadHistory() {
+      const userID = localStorage.getItem('userID');
+      const token  = localStorage.getItem('token');
+      if (!userID || !token) {
+        document.getElementById('ordersContainer').innerText = 'Please log in first.';
+        return;
+      }
+
+      const res = await fetch(`/api/orders/history/${userID}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const { success, orders } = await res.json();
+      if (!success) {
+        document.getElementById('ordersContainer').innerText = 'Failed to load orders.';
+        return;
+      }
+
+      const container = document.getElementById('ordersContainer');
+      container.innerHTML = orders.map(o => `
+        <div class="order">
+          <h2>Order #${o.orderID}</h2>
+          <p><strong>Date:</strong> ${new Date(o.orderDate).toLocaleString()}</p>
+          <p><strong>Status:</strong> ${o.status}</p>
+          <p><strong>Payment:</strong> ${o.paymentMethod.toUpperCase()}</p>
+          <p><strong>Ship To:</strong> ${o.shippingAddress}</p>
+          <p><strong>Total:</strong> ₱${o.totalAmount.toFixed(2)}</p>
+          <h4>Items:</h4>
+          ${o.items.map(i => `
+            <div class="item">
+              • ${i.name} &times;${i.quantity} @ ₱${i.priceAtPurchase.toFixed(2)}
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

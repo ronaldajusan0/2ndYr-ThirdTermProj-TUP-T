@@ -223,6 +223,7 @@ async function completeOrder() {
       showConfirmButton: false
     }).then(() => {
       window.location.href = `/feedback.html?email=${encodeURIComponent(email)}&orderID=${orderID}`;
+
     });
 
   } catch (err) {

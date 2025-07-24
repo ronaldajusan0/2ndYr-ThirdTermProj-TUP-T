@@ -529,7 +529,7 @@
           <h3>${product.name}</h3>
           <p><strong>Brand:</strong> ${product.brand}</p>
           <p><strong>Price:</strong> ₱${product.price}</p>
-          <p><strong>RAM:</strong> ${product.ram || 'N/A'}</p>
+           <div class="info"><strong>RAM:</strong> ${product.ram}</div>
           <p><strong>Storage:</strong> ${product.storage || 'N/A'}</p>
           <p><strong>Status:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</p>
           <button onclick="addToCart(${product.productID})">Add to Cart</button>

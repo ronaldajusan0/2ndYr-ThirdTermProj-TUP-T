@@ -49,6 +49,17 @@
     button:hover {
       background: #574ee0;
     }
+    .feedback-section {
+      margin-top: 30px;
+    }
+    .feedback-item {
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+    .stars {
+      color: #f1c40f;
+    }
   </style>
 </head>
 <body>
@@ -63,7 +74,9 @@
     async function fetchProductDetails() {
       try {
         const res = await fetch(`/api/products/${productID}`);
-        const product = await res.json();
+        const response = await res.json();
+const product = response.product;
+
         currentProduct = product;
 
         const detail = document.getElementById("productDetail");
@@ -74,7 +87,7 @@
           mainImage = main ? `/uploads/${main.filename}` : `/uploads/${product.images[0].filename}`;
         }
 
-        detail.innerHTML = `
+        let html = `
           <img src="${mainImage}" alt="${product.name}" />
           <h2>${product.name}</h2>
           <div class="info"><strong>Brand:</strong> ${product.brand}</div>
@@ -84,16 +97,50 @@
           <div class="info"><strong>Availability:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</div>
           <div class="info"><strong>Description:</strong> ${product.description || "N/A"}</div>
           <div class="info"><strong>Quantity:</strong> ${product.quantity}</div>
-          <div class="info"><strong>Ratings:</strong> ★★★★☆</div>
-          <div class="info"><strong>Feedback:</strong> <em>No reviews yet.</em></div>
           <div class="button-group">
             <button onclick="addToCart(${product.productID})">Add to Cart</button>
             <button onclick="buyNow(${product.productID})">Buy Now</button>
           </div>
         `;
+
+        // Append feedback section
+        html += `<div class="feedback-section" id="feedbackSection">
+          <h3>Customer Feedback</h3>
+          <div id="feedbackList">Loading feedback...</div>
+        </div>`;
+
+        detail.innerHTML = html;
+
+        fetchFeedback();
+
       } catch (err) {
         console.error(err);
         document.getElementById("productDetail").innerHTML = "<p>Failed to load product details.</p>";
+      }
+    }
+
+    async function fetchFeedback() {
+      try {
+        const res = await fetch(`/api/feedback/product/${productID}`);
+        const feedbacks = await res.json();
+
+        const container = document.getElementById("feedbackList");
+        if (!feedbacks.length) {
+          container.innerHTML = '<p>No reviews yet.</p>';
+          return;
+        }
+
+        container.innerHTML = feedbacks.map(item => `
+          <div class="feedback-item">
+            <div class="stars">${'★'.repeat(item.rating)}${'☆'.repeat(5 - item.rating)}</div>
+            <p>${item.feedback}</p>
+            <small><strong>By:</strong> ${item.email}</small>
+          </div>
+        `).join("");
+
+      } catch (err) {
+        document.getElementById("feedbackList").innerHTML = '<p>Failed to load feedback.</p>';
+        console.error(err);
       }
     }
 

@@ -1,19 +1,20 @@
 const db = require("../config/db");
 const path = require("path");
+const fs = require("fs");
 
-
+// CREATE
 exports.createProduct = (req, res) => {
-  console.log("FILES:", req.files); // Add this for debugging
- const { name, brand, price, ram, storage, availability, quantity, mainPhoto, description } = req.body;
+  console.log("FILES:", req.files); // Debugging
+  const { name, brand, price, ram, storage, availability, quantity, mainPhoto, description } = req.body;
 
-  // Save product first
   const isAvailable = Number(availability) === 1 ? 1 : 0;
   const sql = `INSERT INTO products (name, brand, price, ram, storage, availability, quantity, description)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
   db.query(sql, [name, brand, price, ram, storage, isAvailable, quantity, description], (err, result) => {
     if (err) return res.status(500).json({ error: err });
     const productId = result.insertId;
-    // Save imagesname
+
     if (req.files && req.files.length > 0) {
       req.files.forEach((file, idx) => {
         const isMain = (idx + 1) === Number(mainPhoto) ? 1 : 0;
@@ -27,8 +28,7 @@ exports.createProduct = (req, res) => {
   });
 };
 
-
-// READ
+// READ all products
 exports.getProducts = (req, res) => {
   const sql = `
     SELECT p.*, pi.imageID, pi.filename, pi.isMain
@@ -39,7 +39,6 @@ exports.getProducts = (req, res) => {
   db.query(sql, (err, results) => {
     if (err) return res.status(500).json({ error: err });
 
-    // Group images by product
     const products = [];
     const map = {};
     results.forEach(row => {
@@ -58,7 +57,6 @@ exports.getProducts = (req, res) => {
       }
     });
 
-    // Remove duplicate fields
     products.forEach(p => {
       delete p.filename;
       delete p.isMain;
@@ -66,6 +64,35 @@ exports.getProducts = (req, res) => {
     });
 
     res.json(products);
+  });
+};
+
+// READ single product by ID with images
+exports.getProductByID = (req, res) => {
+  const productID = req.params.id;
+  const sql = `
+    SELECT p.*, pi.filename, pi.isMain
+    FROM products p
+    LEFT JOIN product_images pi ON p.productID = pi.productID
+    WHERE p.productID = ?
+  `;
+
+  db.query(sql, [productID], (err, results) => {
+    if (err) return res.status(500).json({ error: err });
+    if (results.length === 0) return res.status(404).json({ message: "Product not found" });
+
+    const product = {
+      ...results[0],
+      images: results.filter(row => row.filename).map(row => ({
+        filename: row.filename,
+        isMain: row.isMain
+      }))
+    };
+
+    delete product.filename;
+    delete product.isMain;
+
+    res.json(product);
   });
 };
 
@@ -106,20 +133,18 @@ exports.updateProduct = (req, res) => {
   });
 };
 
-
-
 // DELETE
-const fs = require("fs");
-
 exports.deleteProduct = (req, res) => {
   const { id } = req.params;
 
-  // Step 1: Get image filenames to delete from disk
   const getImagesQuery = "SELECT filename FROM product_images WHERE productID = ?";
   db.query(getImagesQuery, [id], (imgErr, images) => {
-    if (imgErr) return res.status(500).json({ error: imgErr });
+    if (imgErr) {
+      console.error("Error fetching image filenames:", imgErr);
+      return res.status(500).json({ error: imgErr });
+    }
 
-    // Step 2: Delete image files from disk
+    // Delete image files from filesystem
     images.forEach((img) => {
       const filePath = path.join(__dirname, "../uploads", img.filename);
       fs.unlink(filePath, (err) => {
@@ -127,17 +152,22 @@ exports.deleteProduct = (req, res) => {
       });
     });
 
-    // Step 3: Delete image entries from DB
+    // Delete image records from database
     db.query("DELETE FROM product_images WHERE productID=?", [id], (delImgErr) => {
-      if (delImgErr) return res.status(500).json({ error: delImgErr });
+      if (delImgErr) {
+        console.error("Error deleting product images:", delImgErr);
+        return res.status(500).json({ error: delImgErr });
+      }
 
-      // Step 4: Delete product entry
+      // Finally, delete the product itself
       db.query("DELETE FROM products WHERE productID=?", [id], (prodErr) => {
-        if (prodErr) return res.status(500).json({ error: prodErr });
+        if (prodErr) {
+          console.error("Error deleting product:", prodErr);
+          return res.status(500).json({ error: prodErr });
+        }
 
-        res.json({ message: "Product and images deleted successfully." });
+        res.json({ message: "✅ Product and its images deleted successfully." });
       });
     });
   });
 };
-
