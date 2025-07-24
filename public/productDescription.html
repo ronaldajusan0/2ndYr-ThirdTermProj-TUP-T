@@ -5,18 +5,21 @@
   <title>Product Details</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    /* === PAGE RESET & TYPOGRAPHY === */
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #f0f4ff;
-      padding: 20px;
+      margin: 0; padding: 20px;
+      display: flex; flex-direction: column; align-items: center;
     }
     .product-detail {
+      width: 100%;
       max-width: 800px;
-      margin: auto;
       background: #fff;
       border-radius: 12px;
       padding: 20px;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      margin-top: 90px; /* leave room for sticky header */
     }
     img {
       width: 100%;
@@ -25,17 +28,9 @@
       border-radius: 8px;
       margin-bottom: 20px;
     }
-    h2 {
-      color: #6c63ff;
-    }
-    .info {
-      margin-bottom: 10px;
-    }
-    .button-group {
-      margin-top: 20px;
-      display: flex;
-      gap: 15px;
-    }
+    h2 { color: #6c63ff; margin-bottom: 10px; }
+    .info { margin-bottom: 8px; }
+    .button-group { margin-top: 20px; display:flex; gap:15px; }
     button {
       padding: 12px 20px;
       border: none;
@@ -46,119 +41,123 @@
       cursor: pointer;
       transition: background 0.3s ease;
     }
-    button:hover {
-      background: #574ee0;
-    }
-    .feedback-section {
-      margin-top: 30px;
-    }
+    button:hover { background: #574ee0; }
+
+    /* === FEEDBACK === */
+    .feedback-section { margin-top: 30px; }
     .feedback-item {
-      border-top: 1px solid #ccc;
-      padding-top: 10px;
-      margin-top: 10px;
+      border-top: 1px solid #ddd;
+      padding: 12px 0;
     }
-    .stars {
-      color: #f1c40f;
-    }
+    .stars { color: #f1c40f; margin-bottom: 4px; }
+
+    /* === STICKY HEADER PLACEHOLDER === */
+    #header-container { position: fixed; width: 100%; top: 0; left: 0; z-index:1000; }
   </style>
 </head>
-<body>
+
+<body style="display:none;">
+  <!-- 1) pull in your header.html -->
+  <div id="header-container"></div>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const res  = await fetch('header.html');
+      const html = await res.text();
+      document.getElementById('header-container').innerHTML = html;
+      // re-execute any <script> tags inside header.html
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      tmp.querySelectorAll('script').forEach(old => {
+        const s = document.createElement('script');
+        if (old.src) s.src = old.src;
+        else        s.textContent = old.textContent;
+        document.body.appendChild(s).remove();
+      });
+      // now show page
+      document.body.style.display = 'flex';
+    });
+  </script>
+
+  <!-- 2) product + feedback container -->
   <div class="product-detail" id="productDetail"></div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const productID = urlParams.get("id");
-
-    let currentProduct = null;
+    const params    = new URLSearchParams(window.location.search);
+    const productID = params.get("id");
+    let product, detailEl;
 
     async function fetchProductDetails() {
+      detailEl = document.getElementById("productDetail");
       try {
-        const res = await fetch(`/api/products/${productID}`);
-        const response = await res.json();
-const product = response.product;
-
-        currentProduct = product;
-
-        const detail = document.getElementById("productDetail");
-
-        let mainImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23f5f5f5'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='16' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
-        if (product.images?.length > 0) {
-          const main = product.images.find(img => img.isMain == 1);
-          mainImage = main ? `/uploads/${main.filename}` : `/uploads/${product.images[0].filename}`;
+        // 2a) product info
+        let res1 = await fetch(`/api/products/${productID}`);
+        let { product: p } = await res1.json();
+        product = p;
+        // render basics
+        let mainImg = "/uploads/default.png";
+        if (product.images?.length) {
+          const m = product.images.find(i=>i.isMain)==1;
+          mainImg = `/uploads/${ (m||product.images[0]).filename }`;
         }
-
-        let html = `
-          <img src="${mainImage}" alt="${product.name}" />
+        detailEl.innerHTML = `
+          <img src="${mainImg}" alt="${product.name}">
           <h2>${product.name}</h2>
           <div class="info"><strong>Brand:</strong> ${product.brand}</div>
           <div class="info"><strong>Price:</strong> ₱${product.price}</div>
           <div class="info"><strong>RAM:</strong> ${product.ram}</div>
           <div class="info"><strong>Storage:</strong> ${product.storage}</div>
-          <div class="info"><strong>Availability:</strong> ${product.availability == 1 ? "Available" : "Unavailable"}</div>
-          <div class="info"><strong>Description:</strong> ${product.description || "N/A"}</div>
+          <div class="info"><strong>Availability:</strong> ${product.availability==1?"Available":"Unavailable"}</div>
+          <div class="info"><strong>Description:</strong> ${product.description||"N/A"}</div>
           <div class="info"><strong>Quantity:</strong> ${product.quantity}</div>
           <div class="button-group">
             <button onclick="addToCart(${product.productID})">Add to Cart</button>
             <button onclick="buyNow(${product.productID})">Buy Now</button>
           </div>
+          <div class="feedback-section" id="feedbackSection">
+            <h3>Customer Feedback</h3>
+            <div id="feedbackList">Loading feedback…</div>
+          </div>
         `;
-
-        // Append feedback section
-        html += `<div class="feedback-section" id="feedbackSection">
-          <h3>Customer Feedback</h3>
-          <div id="feedbackList">Loading feedback...</div>
-        </div>`;
-
-        detail.innerHTML = html;
-
         fetchFeedback();
-
-      } catch (err) {
-        console.error(err);
-        document.getElementById("productDetail").innerHTML = "<p>Failed to load product details.</p>";
+      } catch(e) {
+        detailEl.innerHTML = `<p style="color:red">Error loading product.</p>`;
+        console.error(e);
       }
     }
 
     async function fetchFeedback() {
       try {
-        const res = await fetch(`/api/feedback/product/${productID}`);
-        const feedbacks = await res.json();
-
-        const container = document.getElementById("feedbackList");
-        if (!feedbacks.length) {
-          container.innerHTML = '<p>No reviews yet.</p>';
+        let res2 = await fetch(`/api/feedback/product/${productID}`);
+        let list = await res2.json();
+        let container = document.getElementById("feedbackList");
+        if (!list.length) {
+          container.innerHTML = "<p>No reviews yet.</p>";
           return;
         }
-
-        container.innerHTML = feedbacks.map(item => `
+        container.innerHTML = list.map(item=>`
           <div class="feedback-item">
-            <div class="stars">${'★'.repeat(item.rating)}${'☆'.repeat(5 - item.rating)}</div>
+            <div class="stars">${"★".repeat(item.rating)}${"☆".repeat(5-item.rating)}</div>
             <p>${item.feedback}</p>
             <small><strong>By:</strong> ${item.email}</small>
           </div>
         `).join("");
-
-      } catch (err) {
-        document.getElementById("feedbackList").innerHTML = '<p>Failed to load feedback.</p>';
-        console.error(err);
+      } catch(e) {
+        document.getElementById("feedbackList")
+          .innerHTML = `<p style="color:red">Failed to load feedback.</p>`;
+        console.error(e);
       }
     }
 
-    function addToCart(productId) {
+    function addToCart(id) {
       let cart = JSON.parse(localStorage.getItem("cart")) || [];
-      const exists = cart.find(item => item.productID === productId);
-      if (!exists) {
-        cart.push({ productID: productId, quantity: 1 });
-        localStorage.setItem("cart", JSON.stringify(cart));
-        alert("Product added to cart!");
-      } else {
-        alert("Product is already in cart.");
-      }
+      if (!cart.find(i=>i.productID===id)) {
+        cart.push({productID:id,quantity:1});
+        localStorage.setItem("cart",JSON.stringify(cart));
+        alert("Added to cart!");
+      } else alert("Already in cart.");
     }
-
-    function buyNow(productId) {
-      localStorage.setItem("selectedProduct", productId);
-      window.location.href = `/checkout.html?id=${productId}`;
+    function buyNow(id) {
+      window.location.href = `/checkout.html?id=${id}`;
     }
 
     fetchProductDetails();

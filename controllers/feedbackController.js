@@ -76,3 +76,27 @@ exports.deleteFeedback = (req, res) => {
     res.json({ message: "Feedback deleted" });
   });
 };
+
+
+exports.getFeedbackByProduct = (req, res) => {
+  const { productID } = req.params;
+  if (!productID) {
+    return res.status(400).json({ error: "Missing productID parameter" });
+  }
+  const sql = `
+    SELECT f.feedbackID,
+           f.rating,
+           f.feedback,
+           f.email
+    FROM feedback f
+    WHERE f.productID = ?
+    ORDER BY f.feedbackID DESC
+  `;
+  db.query(sql, [productID], (err, results) => {
+    if (err) {
+      console.error("Error fetching feedback for product:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(results);
+  });
+};

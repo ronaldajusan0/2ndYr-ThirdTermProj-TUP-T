@@ -5,6 +5,7 @@ const feedbackController = require('../controllers/feedbackController');
 
 router.post('/', feedbackController.submitFeedback);
 router.get('/', feedbackController.getFeedbackByUser);
+router.get('/product/:productID', feedbackController.getFeedbackByProduct);
 // Get feedback for a specific email and orderID
 // Get feedback for a specific email, orderID, and productID
 // controllers/feedbackController.js

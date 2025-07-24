@@ -135,11 +135,39 @@
       .full-width {
         grid-column: span 1;
       }
+      .navbar {
+  width: 100%;
+}
+
     }
   </style>
 </head>
 
 <body style="display: none;">
+   <div id="header-container"></div>
+
+  <script>
+    // Load and inject header.html, then re-run its scripts, then show the page
+    document.addEventListener('DOMContentLoaded', async () => {
+      const resp = await fetch('header.html');
+      const html = await resp.text();
+      document.getElementById('header-container').innerHTML = html;
+
+      // Execute embedded scripts
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      tmp.querySelectorAll('script').forEach(old => {
+        const s = document.createElement('script');
+        if (old.src) s.src = old.src;
+        else s.textContent = old.textContent;
+        document.body.appendChild(s).remove();
+      });
+
+      // Finally reveal the body
+      document.body.style.display = 'flex';
+    });
+  </script>
+
   <script>
     // ✅ IMMEDIATE admin check - runs before anything else loads
     console.log("🚀 IMMEDIATE admin check starting...");
@@ -179,8 +207,7 @@
     }
   </script>
 
-  <!-- ✅ FIXED: header is now correctly inside body -->
-  <div id="header-container"></div>
+  
 
   <div class="form-card">
     <h1>Create Product</h1>
@@ -489,18 +516,6 @@
     });
   </script>
 
-  <script>
-    // Load header and check admin role (prioritize jwtToken)
-    $("#header-container").load("header.html", function () {
-      const role = sessionStorage.getItem("role") || localStorage.getItem("role");
-      if (role === "admin") {
-        const editUsersLink = document.getElementById("editUsersLink");
-        const dashboardLink = document.getElementById("dashboardLink");
-        if (editUsersLink) editUsersLink.style.display = "inline-block";
-        if (dashboardLink) dashboardLink.style.display = "inline-block";
-      }
-    });
-  </script>
-  
+ 
 </body>
 </html>
