@@ -2,32 +2,30 @@
 <div class="navbar">
   <div class="logo">📦 BetlogProductApp</div>
   <div class="nav-links">
-  <a href="home.html">🏠 Home</a>
-  <a href="cart.html">🛒 Cart <span id="cart-count">(0)</span></a>
-  <a href="orderHistory.html">📦 Order History</a>
+    <a href="home.html">🏠 Home</a>
+    <a href="cart.html">🛒 Cart <span id="cart-count">(0)</span></a>
+    <a href="orderHistory.html">📦 Order History</a>
 
-  <a href="createproduct.html" id="createProductLink" style="display: none;">➕ Create Product</a>
-  <a href="viewproduct.html" id="viewProductsLink" style="display: none;">📋 View Products</a>
-  <a href="dashboard.html" id="dashboardLink" style="display: none;">📊 Dashboard</a>
-  <a href="admin-users.html" id="editUsersLink" style="display: none;">👥 Edit Users</a>
+    <!-- Admin‐only links are hidden by default -->
+    <a href="createproduct.html" id="createProductLink" style="display: none;">➕ Create Product</a>
+    <a href="viewproduct.html" id="viewProductsLink" style="display: none;">📋 View Products</a>
+    <a href="dashboard.html" id="dashboardLink" style="display: none;">📊 Dashboard</a>
+    <a href="admin-users.html" id="editUsersLink" style="display: none;">👥 Edit Users</a>
 
-  <button onclick="logout()">Logout</button>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
 </div>
 
 <script>
   function logout() {
     const token = localStorage.getItem("token") || sessionStorage.getItem("jwtToken");
-    
     if (!token) {
-      // If no token, just clear all storage and redirect
       localStorage.clear();
       sessionStorage.clear();
       alert("You have been logged out");
       window.location.href = "/login.html";
       return;
     }
-
-    // Make API call to logout endpoint
     fetch("/api/logout", {
       method: "POST",
       headers: {
@@ -35,136 +33,132 @@
         "Content-Type": "application/json"
       }
     })
-    .then(response => {
-      if (response.ok) {
-        return response.json();
-      } else {
-        throw new Error("Logout failed");
-      }
-    })
+    .then(res => res.ok ? res.json() : Promise.reject("Logout failed"))
     .then(data => {
-      // ✅ Clear both localStorage and sessionStorage
       localStorage.clear();
       sessionStorage.clear();
-      
-      if (data.success) {
-        alert(`Goodbye ${data.user?.name || 'User'}! You have been logged out successfully`);
-      } else {
-        alert("You have been logged out successfully");
-      }
-      
+      alert(data.success
+        ? `Goodbye ${data.user?.name || 'User'}! You have been logged out successfully`
+        : "You have been logged out successfully");
       window.location.href = "/login.html";
     })
-    .catch(error => {
-      console.error("Logout error:", error);
-      // Even if logout fails, clear all storage and redirect
+    .catch(_ => {
       localStorage.clear();
       sessionStorage.clear();
       alert("Logged out (session cleared)");
       window.location.href = "/login.html";
     });
   }
-</script>
-<script>
+
   function showAdminLinks() {
     const role = localStorage.getItem("role") || sessionStorage.getItem("role");
-    console.log("User role is:", role); // ✅ Debugging line
     if (role === "admin") {
-      document.getElementById("createProductLink").style.display = "inline-block";
-      document.getElementById("viewProductsLink").style.display = "inline-block";
-      document.getElementById("dashboardLink").style.display = "inline-block";
-      document.getElementById("editUsersLink").style.display = "inline-block";
+      ["createProductLink","viewProductsLink","dashboardLink","editUsersLink"]
+        .forEach(id => document.getElementById(id).style.display = "inline-block");
     }
   }
+  window.addEventListener("load", () => setTimeout(showAdminLinks, 100));
 
-  // ✅ Ensure DOM is ready and header is loaded
-  window.addEventListener("load", () => {
-    setTimeout(showAdminLinks, 100); // Give it a moment to ensure elements are injected
-  });
-</script>
-
-<script>
   function updateCartIndicator() {
     const userID = localStorage.getItem("userID") || sessionStorage.getItem("userID");
-    const token = localStorage.getItem("jwtToken") || localStorage.getItem("token") || sessionStorage.getItem("jwtToken");
-    
-    if (!userID || !token) {
-      const cartCountElement = document.getElementById("cart-count");
-      if (cartCountElement) {
-        cartCountElement.textContent = "(0)";
-      }
-      return;
-    }
-
+    const token  = localStorage.getItem("token")  || sessionStorage.getItem("jwtToken");
+    const el = document.getElementById("cart-count");
+    if (!userID || !token) return el.textContent = "(0)";
     fetch(`/api/cart/${userID}`, {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
+      headers: { "Authorization": `Bearer ${token}` }
+    })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => {
+      if (data.success) {
+        const count = data.items.reduce((sum,i)=>sum+i.quantity,0);
+        el.textContent = `(${count})`;
       }
     })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (data.success && data.items) {
-          const count = data.items.reduce((acc, item) => acc + item.quantity, 0);
-          const cartCountElement = document.getElementById("cart-count");
-          if (cartCountElement) {
-            cartCountElement.textContent = `(${count})`;
-          }
-        }
-      })
-      .catch(err => {
-        console.error("Error updating cart indicator:", err);
-        const cartCountElement = document.getElementById("cart-count");
-        if (cartCountElement) {
-          cartCountElement.textContent = "(0)";
-        }
-      });
+    .catch(_ => el.textContent = "(0)");
   }
-
-  // Call it on page load
   updateCartIndicator();
 </script>
 
-  </div>
-</div>
-
 <style>
+  :root {
+    --primary-start: #6c63ff;
+    --primary-end:   #574ee0;
+    --white:         #ffffff;
+    --shadow:        rgba(0,0,0,0.1);
+    --text-light:    rgba(255,255,255,0.9);
+  }
+
+  @keyframes slideDownFade {
+    0% { opacity: 0; transform: translateY(-20px) }
+    100% { opacity: 1; transform: translateY(0) }
+  }
+
   .navbar {
-    background-color: #6c63ff;
-    padding: 16px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: white;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(90deg, var(--primary-start), var(--primary-end));
+    box-shadow: 0 2px 8px var(--shadow);
     position: sticky;
     top: 0;
-    z-index: 999;
+    z-index: 1000;
+    animation: slideDownFade 0.5s ease-out;
   }
 
   .navbar .logo {
-    font-weight: bold;
-    font-size: 20px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--white);
+    transition: transform 0.3s;
+  }
+  .navbar .logo:hover {
+    transform: scale(1.05);
   }
 
-  .navbar .nav-links {
+  .nav-links {
     display: flex;
-    gap: 20px;
+    flex-wrap: wrap;
+    gap: 1rem;
   }
 
-  .navbar .nav-links a {
-    color: white;
+  .nav-links a {
+    position: relative;
+    color: var(--text-light);
     text-decoration: none;
     font-weight: 500;
-    transition: color 0.2s ease;
+    padding: 0.25rem;
+    transition: color 0.3s;
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: -2px;
+    width: 0; height: 2px;
+    background: var(--white);
+    transition: width 0.3s;
+  }
+  .nav-links a:hover {
+    color: var(--white);
+  }
+  .nav-links a:hover::after {
+    width: 100%;
   }
 
-  .navbar .nav-links a:hover {
-    text-decoration: underline;
+  .btn-logout {
+    background: transparent;
+    border: 1px solid var(--white);
+    color: var(--white);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s, transform 0.2s;
+  }
+  .btn-logout:hover {
+    background: var(--white);
+    color: var(--primary-end);
+    transform: translateY(-2px);
   }
 
   @media (max-width: 600px) {
@@ -172,11 +166,15 @@
       flex-direction: column;
       align-items: flex-start;
     }
-
-    .navbar .nav-links {
+    .nav-links {
+      margin-top: 0.5rem;
       flex-direction: column;
-      gap: 10px;
-      margin-top: 10px;
+      gap: 0.5rem;
+      width: 100%;
+    }
+    .nav-links a, .btn-logout {
+      width: 100%;
+      text-align: left;
     }
   }
 </style>

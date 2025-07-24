@@ -1,54 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>My Order History</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Google Font -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Bootstrap 5 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Font Awesome -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+
   <style>
-    body { font-family: sans-serif; padding: 2rem; }
-    .order { border: 1px solid #ddd; margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; }
-    .order h2 { margin-top: 0; }
-    .item { margin-left: 1rem; }
+    :root {
+      --primary: #6c63ff;
+      --light: #f0f2f5;
+      --card-bg: #ffffff;
+      --text: #333333;
+      --shadow: rgba(0, 0, 0, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: var(--light);
+      color: var(--text);
+    }
+    h1 {
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .container { max-width: 800px; }
+
+    /* Fade-in + slide-up */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Accordion overrides */
+    .accordion-item {
+      background: transparent;
+      border: none;
+      margin-bottom: 1rem;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.6s ease forwards;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .accordion-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px var(--shadow);
+    }
+    .accordion-button {
+      position: relative;
+      background: var(--card-bg);
+      color: var(--text);
+      border: none;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 4px 12px var(--shadow);
+      transition: background 0.3s, color 0.3s;
+    }
+    .accordion-button::after { display: none; } /* hide default */
+    .accordion-button.collapsed .arrow {
+      transform: rotate(-90deg);
+    }
+    .accordion-button .arrow {
+      transition: transform 0.3s;
+      color: var(--text);
+    }
+    .accordion-button:not(.collapsed) {
+      background: var(--primary);
+      color: #fff;
+    }
+    .accordion-button:not(.collapsed) .arrow {
+      color: #fff;
+    }
+    .accordion-body {
+      background: var(--card-bg);
+      border-radius: 0 0 8px 8px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+    /* Table tweaks */
+    .table thead th {
+      border-bottom: none;
+      background: transparent;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .table td, .table th {
+      border-top: none;
+      padding: 0.75rem 1rem;
+    }
+    .badge-status {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      padding: 0.4em 0.65em;
+    }
   </style>
 </head>
 <body>
-  <h1>My Order History</h1>
-  <div id="ordersContainer">Loading...</div>
+  <div class="container py-5">
+    <h1 class="text-center mb-4">My Order History</h1>
 
+    <div id="ordersContainer" class="accordion" role="tablist">
+      <div id="loading" class="d-flex justify-content-center align-items-center" style="height:200px;">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     async function loadHistory() {
       const userID = localStorage.getItem('userID');
       const token  = localStorage.getItem('token');
-      if (!userID || !token) {
-        document.getElementById('ordersContainer').innerText = 'Please log in first.';
-        return;
-      }
-
-      const res = await fetch(`/api/orders/history/${userID}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      const { success, orders } = await res.json();
-      if (!success) {
-        document.getElementById('ordersContainer').innerText = 'Failed to load orders.';
-        return;
-      }
-
       const container = document.getElementById('ordersContainer');
-      container.innerHTML = orders.map(o => `
-        <div class="order">
-          <h2>Order #${o.orderID}</h2>
-          <p><strong>Date:</strong> ${new Date(o.orderDate).toLocaleString()}</p>
-          <p><strong>Status:</strong> ${o.status}</p>
-          <p><strong>Payment:</strong> ${o.paymentMethod.toUpperCase()}</p>
-          <p><strong>Ship To:</strong> ${o.shippingAddress}</p>
-          <p><strong>Total:</strong> ₱${o.totalAmount.toFixed(2)}</p>
-          <h4>Items:</h4>
-          ${o.items.map(i => `
-            <div class="item">
-              • ${i.name} &times;${i.quantity} @ ₱${i.priceAtPurchase.toFixed(2)}
+      const loading   = document.getElementById('loading');
+
+      if (!userID || !token) {
+        loading.remove();
+        container.innerHTML = '<div class="alert alert-warning">Please log in first.</div>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/orders/history/${userID}`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const { success, orders } = await res.json();
+
+        loading.remove();
+        if (!success) {
+          container.innerHTML = '<div class="alert alert-danger">Failed to load orders.</div>';
+          return;
+        }
+        if (orders.length === 0) {
+          container.innerHTML = '<p class="text-center text-muted">You have no past orders.</p>';
+          return;
+        }
+
+        container.innerHTML = orders.map((o, idx) => {
+          const collapseId = `collapseOrder${o.orderID}`;
+          const headerId   = `headingOrder${o.orderID}`;
+          const statusClasses = {
+            pending:   'bg-secondary',
+            confirmed: 'bg-info',
+            shipped:   'bg-warning text-dark',
+            delivered: 'bg-success',
+            cancelled: 'bg-danger'
+          };
+          const badgeClass = statusClasses[o.status] || 'bg-secondary';
+
+          return `
+            <div class="accordion-item" style="animation-delay: ${idx*0.1}s">
+              <h2 class="accordion-header" id="${headerId}">
+                <button
+                  class="accordion-button collapsed d-flex justify-content-between align-items-center"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#${collapseId}"
+                  aria-expanded="false"
+                  aria-controls="${collapseId}">
+                  <div>
+                    <i class="fas fa-box-open me-2"></i>
+                    Order #${o.orderID}
+                    <small class="text-muted ms-2"><i class="fas fa-calendar-alt me-1"></i>${new Date(o.orderDate).toLocaleString()}</small>
+                  </div>
+                  <div class="text-end">
+                    <span class="badge badge-status ${badgeClass} me-3">${o.status}</span>
+                    <strong>₱${parseFloat(o.totalAmount).toFixed(2)}</strong>
+                    <i class="fas fa-chevron-down ms-2 arrow"></i>
+                  </div>
+                </button>
+              </h2>
+              <div
+                id="${collapseId}"
+                class="accordion-collapse collapse"
+                aria-labelledby="${headerId}"
+                data-bs-parent="#ordersContainer">
+                <div class="accordion-body">
+                  <div class="row mb-4">
+                    <div class="col-md-6"><i class="fas fa-credit-card me-1"></i><strong>Payment:</strong> ${o.paymentMethod.toUpperCase()}</div>
+                    <div class="col-md-6"><i class="fas fa-truck me-1"></i><strong>Ship To:</strong> ${o.shippingAddress}</div>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table mb-0">
+                      <thead><tr>
+                        <th>Product</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-end">Unit Price</th>
+                        <th class="text-end">Line Total</th>
+                      </tr></thead>
+                      <tbody>${
+                        o.items.map(i => `
+                          <tr>
+                            <td>${i.name}</td>
+                            <td class="text-center">${i.quantity}</td>
+                            <td class="text-end">₱${parseFloat(i.priceAtPurchase).toFixed(2)}</td>
+                            <td class="text-end">₱${parseFloat(i.lineTotal).toFixed(2)}</td>
+                          </tr>
+                        `).join('')
+                      }</tbody>
+                      <tfoot><tr>
+                        <th colspan="3" class="text-end">Grand Total:</th>
+                        <th class="text-end">₱${parseFloat(o.totalAmount).toFixed(2)}</th>
+                      </tr></tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
-          `).join('')}
-        </div>
-      `).join('');
+          `;
+        }).join('');
+      } catch (e) {
+        loading.remove();
+        container.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`;
+      }
     }
 
     loadHistory();

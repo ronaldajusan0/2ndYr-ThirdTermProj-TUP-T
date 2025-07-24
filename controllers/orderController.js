@@ -1,3 +1,5 @@
+// controllers/orderController.js
+
 const db = require("../config/db");
 const nodemailer = require("nodemailer");
 
@@ -29,21 +31,25 @@ exports.createOrder = async (req, res) => {
   }
 
   try {
+    // 1) Insert the order
     const [orderResult] = await db.promise().query(
       "INSERT INTO orders (userID, paymentMethod, shippingAddress, status) VALUES (?, ?, ?, 'confirmed')",
       [userID, paymentMethod, address]
     );
-
     const orderID = orderResult.insertId;
 
+    // 2) Insert each line with lineTotal
     for (const item of items) {
+      const lineTotal = item.quantity * item.price;
       await db.promise().query(
-        "INSERT INTO orderinfo (orderID, productID, quantity, priceAtPurchase) VALUES (?, ?, ?, ?)",
-        [orderID, item.productID, item.quantity, item.price]
+        `INSERT INTO orderinfo
+           (orderID, productID, quantity, priceAtPurchase, lineTotal)
+         VALUES (?, ?, ?, ?, ?)`,
+        [orderID, item.productID, item.quantity, item.price, lineTotal]
       );
     }
 
-    // Send email to customer after order is placed
+    // 3) Send confirmation email
     if (userEmail) {
       const subject = `Order Confirmation - Order #${orderID}`;
       const text = `
@@ -61,7 +67,7 @@ We will notify you once the order is shipped.
         await sendEmail(userEmail, subject, text);
       } catch (emailErr) {
         console.error("Failed to send confirmation email:", emailErr);
-        // Still continue even if email fails
+        // continue even if email fails
       }
     }
 
@@ -87,6 +93,7 @@ exports.getOrderHistory = (req, res) => {
       oi.productID,
       oi.quantity,
       oi.priceAtPurchase,
+      oi.lineTotal,
       p.name AS productName
     FROM orders o
     JOIN orderinfo oi ON o.orderID = oi.orderID
@@ -96,30 +103,37 @@ exports.getOrderHistory = (req, res) => {
   `;
 
   db.query(sql, [userID], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, error: err.message });
+    if (err) {
+      console.error("❌ Error fetching order history:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
 
-    // group rows by orderID
+    // 4) Group rows by orderID and compute numeric totals
     const ordersMap = {};
     rows.forEach(r => {
+      const lineTotalNum = parseFloat(r.lineTotal);
+
       if (!ordersMap[r.orderID]) {
         ordersMap[r.orderID] = {
-          orderID:        r.orderID,
-          orderDate:      r.orderDate,
-          paymentMethod:  r.paymentMethod,
-          shippingAddress:r.shippingAddress,
-          status:         r.status,
-          totalAmount:    0,
-          items:          []
+          orderID:         r.orderID,
+          orderDate:       r.orderDate,
+          paymentMethod:   r.paymentMethod,
+          shippingAddress: r.shippingAddress,
+          status:          r.status,
+          totalAmount:     0,
+          items:           []
         };
       }
+
       const ord = ordersMap[r.orderID];
       ord.items.push({
         productID:       r.productID,
         name:            r.productName,
         quantity:        r.quantity,
-        priceAtPurchase: r.priceAtPurchase
+        priceAtPurchase: parseFloat(r.priceAtPurchase),
+        lineTotal:       lineTotalNum
       });
-      ord.totalAmount += r.quantity * r.priceAtPurchase;
+      ord.totalAmount += lineTotalNum;
     });
 
     res.json({
