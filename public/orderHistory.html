@@ -44,13 +44,10 @@
     }
     .container { max-width: 800px; }
 
-    /* Fade-in + slide-up */
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
-    /* Accordion overrides */
     .accordion-item {
       background: transparent;
       border: none;
@@ -74,13 +71,13 @@
       box-shadow: 0 4px 12px var(--shadow);
       transition: background 0.3s, color 0.3s;
     }
-    .accordion-button::after { display: none; } /* hide default */
-    .accordion-button.collapsed .arrow {
-      transform: rotate(-90deg);
-    }
+    .accordion-button::after { display: none; }
     .accordion-button .arrow {
       transition: transform 0.3s;
       color: var(--text);
+    }
+    .accordion-button.collapsed .arrow {
+      transform: rotate(-90deg);
     }
     .accordion-button:not(.collapsed) {
       background: var(--primary);
@@ -95,7 +92,6 @@
       padding: 1rem 1.5rem;
       box-shadow: 0 4px 12px var(--shadow);
     }
-    /* Table tweaks */
     .table thead th {
       border-bottom: none;
       background: transparent;
@@ -161,6 +157,9 @@
           return;
         }
 
+        // sort newest → oldest
+        orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+
         container.innerHTML = orders.map((o, idx) => {
           const collapseId = `collapseOrder${o.orderID}`;
           const headerId   = `headingOrder${o.orderID}`;
@@ -174,7 +173,7 @@
           const badgeClass = statusClasses[o.status] || 'bg-secondary';
 
           return `
-            <div class="accordion-item" style="animation-delay: ${idx*0.1}s">
+            <div class="accordion-item" style="animation-delay: ${idx * 0.1}s">
               <h2 class="accordion-header" id="${headerId}">
                 <button
                   class="accordion-button collapsed d-flex justify-content-between align-items-center"
@@ -186,7 +185,10 @@
                   <div>
                     <i class="fas fa-box-open me-2"></i>
                     Order #${o.orderID}
-                    <small class="text-muted ms-2"><i class="fas fa-calendar-alt me-1"></i>${new Date(o.orderDate).toLocaleString()}</small>
+                    <small class="text-muted ms-2">
+                      <i class="fas fa-calendar-alt me-1"></i>
+                      ${new Date(o.orderDate).toLocaleString()}
+                    </small>
                   </div>
                   <div class="text-end">
                     <span class="badge badge-status ${badgeClass} me-3">${o.status}</span>
@@ -202,31 +204,41 @@
                 data-bs-parent="#ordersContainer">
                 <div class="accordion-body">
                   <div class="row mb-4">
-                    <div class="col-md-6"><i class="fas fa-credit-card me-1"></i><strong>Payment:</strong> ${o.paymentMethod.toUpperCase()}</div>
-                    <div class="col-md-6"><i class="fas fa-truck me-1"></i><strong>Ship To:</strong> ${o.shippingAddress}</div>
+                    <div class="col-md-6">
+                      <i class="fas fa-credit-card me-1"></i>
+                      <strong>Payment:</strong> ${o.paymentMethod.toUpperCase()}
+                    </div>
+                    <div class="col-md-6">
+                      <i class="fas fa-truck me-1"></i>
+                      <strong>Ship To:</strong> ${o.shippingAddress}
+                    </div>
                   </div>
                   <div class="table-responsive">
                     <table class="table mb-0">
-                      <thead><tr>
-                        <th>Product</th>
-                        <th class="text-center">Qty</th>
-                        <th class="text-end">Unit Price</th>
-                        <th class="text-end">Line Total</th>
-                      </tr></thead>
-                      <tbody>${
-                        o.items.map(i => `
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th class="text-center">Qty</th>
+                          <th class="text-end">Unit Price</th>
+                          <th class="text-end">Line Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${o.items.map(i => `
                           <tr>
                             <td>${i.name}</td>
                             <td class="text-center">${i.quantity}</td>
                             <td class="text-end">₱${parseFloat(i.priceAtPurchase).toFixed(2)}</td>
                             <td class="text-end">₱${parseFloat(i.lineTotal).toFixed(2)}</td>
                           </tr>
-                        `).join('')
-                      }</tbody>
-                      <tfoot><tr>
-                        <th colspan="3" class="text-end">Grand Total:</th>
-                        <th class="text-end">₱${parseFloat(o.totalAmount).toFixed(2)}</th>
-                      </tr></tfoot>
+                        `).join('')}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <th colspan="3" class="text-end">Grand Total:</th>
+                          <th class="text-end">₱${parseFloat(o.totalAmount).toFixed(2)}</th>
+                        </tr>
+                      </tfoot>
                     </table>
                   </div>
                 </div>

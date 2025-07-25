@@ -714,9 +714,12 @@
     }
 
     function buyNow(productId) {
-      localStorage.setItem("selectedProduct", productId);
-      window.location.href = `/checkout.html?id=${productId}`;
-    }
+  // optional: clear any previous cart-based checkout
+  localStorage.removeItem("selectedProduct");
+  // pass the product ID in the URL
+  window.location.href = `/checkout.html?id=${productId}`;
+}
+
 
     // ✅ jQuery Search/Autocomplete Implementation (keeping your original)
     let searchTimeout;

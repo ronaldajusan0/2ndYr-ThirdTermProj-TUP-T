@@ -51,8 +51,14 @@
   <div style="text-align: center;">
     <button onclick="confirmCheckout()">Confirm Purchase</button>
   </div>
-
+ 
   <script>
+    // grab the ?id= param if present
+const urlParams            = new URLSearchParams(window.location.search);
+const selectedProductID    = urlParams.get("id");
+let singleCheckoutProduct; // will hold the fetched product
+
+
     async function loadCheckout() {
       const userID = localStorage.getItem("userID");
       const token = localStorage.getItem("jwtToken") || localStorage.getItem("token");
