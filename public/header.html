@@ -5,78 +5,91 @@
     <a href="home.html">🏠 Home</a>
     <a href="cart.html">🛒 Cart <span id="cart-count">(0)</span></a>
     <a href="orderHistory.html">📦 Order History</a>
-    
+    <a href="profile.html">👤 Profile</a>
 
     <!-- Admin‐only links are hidden by default -->
     <a href="createproduct.html" id="createProductLink" style="display: none;">➕ Create Product</a>
-    <a href="viewproduct.html" id="viewProductsLink" style="display: none;">📋 View Products</a>
-    <a href="dashboard.html" id="dashboardLink" style="display: none;">📊 Dashboard</a>
-    <a href="admin-users.html" id="editUsersLink" style="display: none;">👥 Edit Users</a>
+    <a href="viewproduct.html"    id="viewProductsLink" style="display: none;">📋 View Products</a>
+    <a href="dashboard.html"       id="dashboardLink"      style="display: none;">📊 Dashboard</a>
+    <a href="admin-users.html"     id="editUsersLink"      style="display: none;">👥 Edit Users</a>
 
-    <button class="btn-logout" onclick="logout()">Logout</button>
+    <button class="btn-logout">Logout</button>
   </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  function logout() {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("jwtToken");
+  // Ask for confirmation before logging out
+  function logoutRequest() {
+    if (!confirm('Are you sure you want to logout?')) return;
+
+    const token = localStorage.getItem('token') || sessionStorage.getItem('jwtToken');
     if (!token) {
       localStorage.clear();
       sessionStorage.clear();
-      alert("You have been logged out");
-      window.location.href = "/login.html";
+      alert('You have been logged out');
+      window.location.href = '/login.html';
       return;
     }
-    fetch("/api/logout", {
-      method: "POST",
+
+    fetch('/api/logout', {
+      method: 'POST',
       headers: {
-        "Authorization": "Bearer " + token,
-        "Content-Type": "application/json"
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
       }
     })
-    .then(res => res.ok ? res.json() : Promise.reject("Logout failed"))
+    .then(res => res.ok ? res.json() : Promise.reject('Logout failed'))
     .then(data => {
       localStorage.clear();
       sessionStorage.clear();
       alert(data.success
         ? `Goodbye ${data.user?.name || 'User'}! You have been logged out successfully`
-        : "You have been logged out successfully");
-      window.location.href = "/login.html";
+        : 'You have been logged out successfully');
+      window.location.href = '/login.html';
     })
-    .catch(_ => {
+    .catch(() => {
       localStorage.clear();
       sessionStorage.clear();
-      alert("Logged out (session cleared)");
-      window.location.href = "/login.html";
+      alert('Logged out (session cleared)');
+      window.location.href = '/login.html';
     });
   }
 
+  // Attach logout handler to button
+  $(document).ready(() => {
+    $('.btn-logout').on('click', logoutRequest);
+  });
+
+  // Show admin links if role is admin
   function showAdminLinks() {
-    const role = localStorage.getItem("role") || sessionStorage.getItem("role");
-    if (role === "admin") {
-      ["createProductLink","viewProductsLink","dashboardLink","editUsersLink"]
-        .forEach(id => document.getElementById(id).style.display = "inline-block");
+    const role = localStorage.getItem('role') || sessionStorage.getItem('role');
+    if (role === 'admin') {
+      ['createProductLink','viewProductsLink','dashboardLink','editUsersLink']
+        .forEach(id => $(`#${id}`).show());
     }
   }
-  window.addEventListener("load", () => setTimeout(showAdminLinks, 100));
+  $(window).on('load', () => setTimeout(showAdminLinks, 100));
 
+  // Update cart indicator
   function updateCartIndicator() {
-    const userID = localStorage.getItem("userID") || sessionStorage.getItem("userID");
-    const token  = localStorage.getItem("token")  || sessionStorage.getItem("jwtToken");
-    const el = document.getElementById("cart-count");
-    if (!userID || !token) return el.textContent = "(0)";
+    const userID = localStorage.getItem('userID') || sessionStorage.getItem('userID');
+    const token  = localStorage.getItem('token')  || sessionStorage.getItem('jwtToken');
+    if (!userID || !token) return $('#cart-count').text('(0)');
+
     fetch(`/api/cart/${userID}`, {
-      headers: { "Authorization": `Bearer ${token}` }
+      headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(r => r.ok ? r.json() : Promise.reject())
     .then(data => {
       if (data.success) {
-        const count = data.items.reduce((sum,i)=>sum+i.quantity,0);
-        el.textContent = `(${count})`;
+        const count = data.items.reduce((sum,i) => sum + i.quantity, 0);
+        $('#cart-count').text(`(${count})`);
       }
     })
-    .catch(_ => el.textContent = "(0)");
+    .catch(() => $('#cart-count').text('(0)'));
   }
+
   updateCartIndicator();
 </script>
 
@@ -90,8 +103,8 @@
   }
 
   @keyframes slideDownFade {
-    0% { opacity: 0; transform: translateY(-20px) }
-    100% { opacity: 1; transform: translateY(0) }
+    0% { opacity: 0; transform: translateY(-20px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
 
   .navbar {
@@ -106,7 +119,6 @@
     z-index: 1000;
     animation: slideDownFade 0.5s ease-out;
   }
-
   .navbar .logo {
     font-size: 1.4rem;
     font-weight: 600;
@@ -122,7 +134,6 @@
     flex-wrap: wrap;
     gap: 1rem;
   }
-
   .nav-links a {
     position: relative;
     color: var(--text-light);

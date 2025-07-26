@@ -24,9 +24,25 @@ router.get('/users/:userID', isOwnerOrAdmin('userID'), (req, res) => {
   });
 });
 
+router.put(
+  '/users/:userID',
+  isOwnerOrAdmin('userID'),
+  upload.single('profilePic'),
+  userController.updateUserProfile
+);
+
+router.get(
+  '/profile',
+  isAuthenticated,
+  userController.getMyProfile
+);
+
+router.get('/profile', isAuthenticated, userController.getMyProfile);
 // ✅ Admin-only routes (strict authentication and detailed logging)
 router.get("/users", isAdminStrict, userController.getAllUsers);
 router.put("/users/:userID/role", isAdminStrict, userController.updateUserRole);
 router.patch("/users/:userID/status", isAdminStrict, userController.toggleUserStatus);
+
+
 
 module.exports = router;

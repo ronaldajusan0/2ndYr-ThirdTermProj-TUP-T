@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Orders History</title>
+  <title>My Order History</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Google Font -->
@@ -55,14 +55,12 @@
       opacity: 0;
       transform: translateY(20px);
       animation: fadeInUp 0.6s ease forwards;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .accordion-item:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 15px var(--shadow);
     }
     .accordion-button {
-      position: relative;
       background: var(--card-bg);
       color: var(--text);
       border: none;
@@ -71,11 +69,6 @@
       box-shadow: 0 4px 12px var(--shadow);
       transition: background 0.3s, color 0.3s;
     }
-    .accordion-button::after { display: none; }
-    .accordion-button .arrow {
-      transition: transform 0.3s;
-      color: var(--text);
-    }
     .accordion-button.collapsed .arrow {
       transform: rotate(-90deg);
     }
@@ -83,24 +76,11 @@
       background: var(--primary);
       color: #fff;
     }
-    .accordion-button:not(.collapsed) .arrow {
-      color: #fff;
-    }
     .accordion-body {
       background: var(--card-bg);
       border-radius: 0 0 8px 8px;
       padding: 1rem 1.5rem;
       box-shadow: 0 4px 12px var(--shadow);
-    }
-    .table thead th {
-      border-bottom: none;
-      background: transparent;
-      color: var(--text);
-      font-weight: 500;
-    }
-    .table td, .table th {
-      border-top: none;
-      padding: 0.75rem 1rem;
     }
     .badge-status {
       font-size: 0.8rem;
@@ -110,6 +90,8 @@
   </style>
 </head>
 <body>
+
+  <!-- Header -->
   <div id="header-container"></div>
 
   <div class="container py-5">
@@ -117,27 +99,31 @@
 
     <div id="ordersContainer" class="accordion" role="tablist">
       <div id="loading" class="d-flex justify-content-center align-items-center" style="height:200px;">
-        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading…</span></div>
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading…</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap Bundle JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Dependencies -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
   <script>
-    // Load header
-    $("#header-container").load("header.html");
+    // Load header.html
+    $('#header-container').load('/header.html');
 
     async function loadHistory() {
       const userID = localStorage.getItem('userID');
       const token  = localStorage.getItem('token');
-      const container = document.getElementById('ordersContainer');
-      const loading   = document.getElementById('loading');
+      const container = $('#ordersContainer');
+      $('#loading').show();
 
       if (!userID || !token) {
-        loading.remove();
-        container.innerHTML = '<div class="alert alert-warning">Please log in first.</div>';
+        $('#loading').remove();
+        container.html('<div class="alert alert-warning">Please log in first.</div>');
         return;
       }
 
@@ -146,34 +132,38 @@
           headers: { 'Authorization': 'Bearer ' + token }
         });
         const { success, orders } = await res.json();
+        $('#loading').remove();
 
-        loading.remove();
         if (!success) {
-          container.innerHTML = '<div class="alert alert-danger">Failed to load orders.</div>';
+          container.html('<div class="alert alert-danger">Failed to load orders.</div>');
           return;
         }
         if (orders.length === 0) {
-          container.innerHTML = '<p class="text-center text-muted">You have no past orders.</p>';
+          container.html('<p class="text-center text-muted">You have no past orders.</p>');
           return;
         }
 
         // sort newest → oldest
         orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
 
-        container.innerHTML = orders.map((o, idx) => {
-          const collapseId = `collapseOrder${o.orderID}`;
-          const headerId   = `headingOrder${o.orderID}`;
-          const statusClasses = {
-            pending:   'bg-secondary',
-            confirmed: 'bg-info',
-            shipped:   'bg-warning text-dark',
-            delivered: 'bg-success',
-            cancelled: 'bg-danger'
-          };
-          const badgeClass = statusClasses[o.status] || 'bg-secondary';
+        container.html(
+          orders.map((o, idx) => {
+            const collapseId = `collapseOrder${o.orderID}`;
+            const headerId   = `headingOrder${o.orderID}`;
+            const statusClasses = {
+              pending:   'bg-secondary',
+              confirmed: 'bg-info',
+              shipped:   'bg-warning text-dark',
+              delivered: 'bg-success',
+              cancelled: 'bg-danger'
+            };
+            const badgeClass = statusClasses[o.status] || 'bg-secondary';
 
-          return `
-            <div class="accordion-item" style="animation-delay: ${idx * 0.1}s">
+            // hide action buttons if delivered or cancelled
+            const isFinal = o.status === 'delivered' || o.status === 'cancelled';
+
+            return `
+            <div class="accordion-item" style="animation-delay:${idx * 0.1}s">
               <h2 class="accordion-header" id="${headerId}">
                 <button
                   class="accordion-button collapsed d-flex justify-content-between align-items-center"
@@ -214,7 +204,7 @@
                     </div>
                   </div>
                   <div class="table-responsive">
-                    <table class="table mb-0">
+                    <table class="table mb-3">
                       <thead>
                         <tr>
                           <th>Product</th>
@@ -242,31 +232,133 @@
                     </table>
                   </div>
 
-                  <!-- ─── Feedback button ─── -->
+                  ${!isFinal ? `
+                    <div class="mt-3 text-end">
+                      <button class="btn btn-danger me-2"
+                              onclick="cancelOrder(${o.orderID})">
+                        Cancel Delivery
+                      </button>
+                      <button class="btn btn-success"
+                              onclick="completeOrder(${o.orderID})">
+                        Mark as Received
+                      </button>
+                    </div>
+                  ` : ''}
+                  
                   <div class="mt-3 text-end">
-                    <button
-                      class="btn btn-outline-primary"
-                      onclick="
-                        window.location.href=
-                          'feedback.html?'
-                          + 'email='    + encodeURIComponent(localStorage.getItem('email'))
-                          + '&orderID=' + ${o.orderID}
-                      ">
+                    <button class="btn btn-outline-primary"
+                            onclick="window.location.href='feedback.html?email='+encodeURIComponent(localStorage.getItem('email'))+'&orderID=${o.orderID}'">
                       📝 Give / View Feedback
                     </button>
                   </div>
-
                 </div>
               </div>
-            </div>
-          `;
-        }).join('');
+            </div>`;
+          }).join('')
+        );
       } catch (e) {
-        loading.remove();
-        container.innerHTML = `<div class="alert alert-danger">Error: ${e.message}</div>`;
+        $('#loading').remove();
+        container.html(`<div class="alert alert-danger">Error: ${e.message}</div>`);
       }
     }
 
+    async function cancelOrder(orderID) {
+      if (!confirm(`Cancel order #${orderID}?`)) return;
+      const email = localStorage.getItem('email');
+      try {
+        const res = await fetch(`/api/orders/${orderID}/status`, {
+          method: 'PATCH',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({status:'cancelled', email})
+        });
+        if (!res.ok) throw await res.json();
+        Swal.fire('Cancelled','Your order has been cancelled.','info');
+        setTimeout(loadHistory, 500);
+      } catch (err) {
+        Swal.fire('Error', err.message || err.error || 'Failed to cancel order.','error');
+      }
+    }
+
+    async function completeOrder(orderID) {
+      if (!confirm(`Mark order #${orderID} as received?`)) return;
+      const email = localStorage.getItem('email');
+      try {
+        let res = await fetch(`/api/orders/${orderID}/status`, {
+          method: 'PATCH',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({status:'delivered', email})
+        });
+        if (!res.ok) throw await res.json();
+
+        // prompt feedback
+        const orderRes = await fetch(`/api/orders/orderinfo/${orderID}`);
+        const { items } = await orderRes.json();
+        for (const item of items) {
+          const { value: formValues } = await Swal.fire({
+            title: `Review: ${item.name}`,
+            html: `
+              <label>Your Rating for <strong>${item.name}</strong>:</label>
+              <div id="stars-${item.productID}" class="starContainer"></div>
+              <textarea id="feedback-${item.productID}" class="swal2-textarea" placeholder="Write your feedback here..." required></textarea>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Submit',
+            cancelButtonText: 'Skip',
+            preConfirm: () => {
+              const rating = document.querySelectorAll(`#stars-${item.productID} span.filled`).length;
+              const feedbackText = document.getElementById(`feedback-${item.productID}`).value.trim();
+              if (rating === 0 || feedbackText === "") {
+                Swal.showValidationMessage("⚠️ Please provide both a star rating and written feedback.");
+                return false;
+              }
+              return {rating, feedback: feedbackText};
+            },
+            didOpen: () => {
+              const container = document.getElementById(`stars-${item.productID}`);
+              for (let i=1; i<=5; i++){
+                const star = document.createElement("span");
+                star.textContent = "★";
+                star.style.fontSize = "24px";
+                star.style.cursor = "pointer";
+                star.style.color = "#ccc";
+                star.addEventListener("click", () => {
+                  container.querySelectorAll("span").forEach((s, idx) => {
+                    s.style.color = idx < i ? "#f1c40f" : "#ccc";
+                    s.classList.toggle("filled", idx < i);
+                  });
+                });
+                container.appendChild(star);
+              }
+            }
+          });
+          if (formValues) {
+            await fetch("/api/feedback", {
+              method: "POST",
+              headers: {"Content-Type":"application/json"},
+              body: JSON.stringify({
+                orderID,
+                productID: item.productID,
+                email,
+                feedback: formValues.feedback,
+                rating: formValues.rating
+              })
+            });
+          }
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Feedback submitted!',
+          text: 'Thank you for your reviews.',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => loadHistory());
+      } catch (err) {
+        Swal.fire('Error', err.message || err.error || 'Failed to update order.','error');
+      }
+    }
+
+    // initialize
     loadHistory();
   </script>
 </body>

@@ -243,3 +243,51 @@ function simpleLogout() {
 }
   `;
 };
+
+// Update user profile details (name, age, contactNumber, address, profilePic)
+exports.updateUserProfile = (req, res) => {
+  const { name, age, address, contactNumber } = req.body;
+  const profilePic = req.file ? req.file.filename : null;
+  const { userID } = req.params;
+
+  const fields = [];
+  const values = [];
+  if (name) values.push(name), fields.push('name = ?');
+  if (age) values.push(age), fields.push('age = ?');
+  if (address) values.push(address), fields.push('address = ?');
+  if (contactNumber) values.push(contactNumber), fields.push('contactNumber = ?');
+  if (profilePic) values.push(profilePic), fields.push('profilePic = ?');
+
+  if (!fields.length) return res.status(400).json({ message: 'No data to update' });
+
+  const sql = `UPDATE users SET ${fields.join(', ')} WHERE userID = ?`;
+  values.push(userID);
+
+  db.query(sql, values, err => {
+    if (err) return res.status(500).json({ error: 'Update failed', details: err });
+    // Return updated user
+    db.query(
+      'SELECT userID, name, age, address, email, contactNumber, role, status, profilePic FROM users WHERE userID = ?',
+      [userID],
+      (e2, results) => {
+        if (e2) return res.status(500).json({ error: e2 });
+        res.json({ success: true, user: results[0] });
+      }
+    );
+  });
+};
+
+exports.getMyProfile = (req, res) => {
+  const userID = req.user.userID;
+  const sql = `
+    SELECT userID, name, age, address, email,
+           contactNumber, role, status, profilePic
+    FROM users
+    WHERE userID = ?
+  `;
+  db.query(sql, [userID], (err, results) => {
+    if (err) return res.status(500).json({ message: 'DB error', error: err });
+    if (!results.length) return res.status(404).json({ message: 'User not found' });
+    res.json({ success: true, user: results[0] });
+  });
+};

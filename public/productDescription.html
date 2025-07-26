@@ -21,13 +21,6 @@
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
       margin-top: 90px; /* leave room for sticky header */
     }
-    img {
-      width: 100%;
-      max-height: 400px;
-      object-fit: contain;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
     h2 { color: #6c63ff; margin-bottom: 10px; }
     .info { margin-bottom: 8px; }
     .button-group { margin-top: 20px; display:flex; gap:15px; }
@@ -42,6 +35,38 @@
       transition: background 0.3s ease;
     }
     button:hover { background: #574ee0; }
+
+    /* === IMAGE GALLERY === */
+    .image-gallery {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .image-gallery #mainImage {
+      width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    .image-gallery .thumbs {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .image-gallery .thumb {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .image-gallery .thumb:hover,
+    .image-gallery .thumb:focus {
+      border-color: #6c63ff;
+    }
 
     /* === FEEDBACK === */
     .feedback-section { margin-top: 30px; }
@@ -93,14 +118,38 @@
         let res1 = await fetch(`/api/products/${productID}`);
         let { product: p } = await res1.json();
         product = p;
-        // render basics
+
+        // pick main image or default
         let mainImg = "/uploads/default.png";
         if (product.images?.length) {
-          const m = product.images.find(i=>i.isMain)==1;
-          mainImg = `/uploads/${ (m||product.images[0]).filename }`;
+          const mainObj = product.images.find(i=>i.isMain) || product.images[0];
+          mainImg = `/uploads/${mainObj.filename}`;
         }
+
+        // render gallery + details
         detailEl.innerHTML = `
-          <img src="${mainImg}" alt="${product.name}">
+          <div class="image-gallery">
+            <img id="mainImage" src="${mainImg}" alt="${product.name}" />
+            <div class="thumbs">
+              ${product.images && product.images.length
+                ? product.images.map(img => `
+                    <img
+                      class="thumb"
+                      src="/uploads/${img.filename}"
+                      data-full="/uploads/${img.filename}"
+                      alt="${product.name}"
+                      onclick="document.getElementById('mainImage').src=this.dataset.full"
+                    />
+                  `).join("")
+                : `<img class="thumb"
+                        src="/uploads/default.png"
+                        data-full="/uploads/default.png"
+                        alt="Default"
+                        onclick="document.getElementById('mainImage').src=this.dataset.full"
+                   />`
+              }
+            </div>
+          </div>
           <h2>${product.name}</h2>
           <div class="info"><strong>Brand:</strong> ${product.brand}</div>
           <div class="info"><strong>Price:</strong> ₱${product.price}</div>

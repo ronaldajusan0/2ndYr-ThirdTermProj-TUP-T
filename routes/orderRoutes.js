@@ -6,11 +6,11 @@ const PDFDocument = require("pdfkit");
 const { isAuthenticated, isAdmin, isOwnerOrAdmin } = require("../middlewares/auth");
 const orderController = require("../controllers/orderController");
 const transporter = nodemailer.createTransport({
-  host: "smtp.mailtrap.io",
-  port: 587,
+  host: "sandbox.smtp.mailtrap.io",
+  port: 2525,
   auth: {
-    user: "9ad95f834041f2",
-    pass: "933176ce1c3ce6"
+    user: "99190548971850",
+    pass: "591d206203a0fd"
   }
 });
 

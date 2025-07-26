@@ -35,6 +35,9 @@ app.use('/api/cart', cartRoutes);
 app.use('/api', dashboardRoutes);
 app.use("/api", productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 

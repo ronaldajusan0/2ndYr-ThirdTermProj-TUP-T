@@ -17,9 +17,7 @@
     margin-bottom: 20px;
     color: #555;
   }
-  .order-meta p {
-    margin: 5px 0;
-  }
+  .order-meta p { margin: 5px 0; }
   table.receipt-table {
     width: 100%;
     border-collapse: collapse;
@@ -34,9 +32,7 @@
     background-color: #eaeaea;
     color: #333;
   }
-  .receipt-table td {
-    color: #444;
-  }
+  .receipt-table td { color: #444; }
   .total-row td {
     font-weight: bold;
     background-color: #f0f0f0;
@@ -74,7 +70,7 @@
   <div id="receiptDetails"></div>
   <div class="btn-group">
     <button class="btn-cancel" onclick="cancelOrder()">Cancel Delivery</button>
-    <button class="btn-complete" onclick="completeOrder()">Mark as Received</button>
+    <button class="btn-complete" onclick="shipOrder()">Confirm Shipping</button>
   </div>
 </div>
 
@@ -87,7 +83,7 @@ async function loadReceipt() {
   const res = await fetch(`/api/orders/orderinfo/${orderID}`);
   const data = await res.json();
 
-  if (!data || !data.items || !data.items.length) {
+  if (!data?.items?.length) {
     document.getElementById("receiptDetails").innerHTML = "<p>No order details found.</p>";
     return;
   }
@@ -132,102 +128,36 @@ async function loadReceipt() {
   document.getElementById("receiptDetails").innerHTML = html;
 }
 
-async function completeOrder() {
+async function shipOrder() {
   const orderID = new URLSearchParams(location.search).get("orderID");
   const email = localStorage.getItem("email");
-
   if (!email) {
     alert("Email not found. Please login again.");
     return;
   }
+  if (!confirm(`Mark order #${orderID} as shipped?`)) return;
 
   try {
     const res = await fetch(`/api/orders/${orderID}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "delivered", email })
+      body: JSON.stringify({ status: "shipped", email })
     });
-
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Failed to update status.");
 
-    const orderRes = await fetch(`/api/orders/orderinfo/${orderID}`);
-    const orderData = await orderRes.json();
-
-    if (!orderData.items || !orderData.items.length) {
-      Swal.fire("No items found to rate.");
-      return;
-    }
-
-    for (const item of orderData.items) {
-      const { value: formValues } = await Swal.fire({
-        title: `Review: ${item.name}`,
-        html: `
-          <label>Your Rating for <strong>${item.name}</strong>:</label>
-          <div id="stars-${item.productID}" class="starContainer"></div>
-          <textarea id="feedback-${item.productID}" class="swal2-textarea" placeholder="Write your feedback here..." required></textarea>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Submit',
-        cancelButtonText: 'Skip',
-        preConfirm: () => {
-          const rating = document.querySelectorAll(`#stars-${item.productID} span.filled`).length;
-          const feedbackText = document.getElementById(`feedback-${item.productID}`).value.trim();
-
-          if (rating === 0 || feedbackText === "") {
-            Swal.showValidationMessage("⚠️ Please provide both a star rating and written feedback.");
-            return false;
-          }
-
-          return { rating, feedback: feedbackText };
-        },
-        didOpen: () => {
-          const container = document.getElementById(`stars-${item.productID}`);
-          for (let i = 1; i <= 5; i++) {
-            const star = document.createElement("span");
-            star.textContent = "★";
-            star.style.fontSize = "24px";
-            star.style.cursor = "pointer";
-            star.style.color = "#ccc";
-            star.addEventListener("click", () => {
-              container.querySelectorAll("span").forEach((s, index) => {
-                s.style.color = index < i ? "#f1c40f" : "#ccc";
-                s.classList.toggle("filled", index < i);
-              });
-            });
-            container.appendChild(star);
-          }
-        }
-      });
-
-      if (formValues && formValues.rating > 0) {
-        await fetch("/api/feedback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderID,
-            productID: item.productID,
-            email,
-            feedback: formValues.feedback,
-            rating: formValues.rating
-          })
-        });
-      }
-    }
-
     Swal.fire({
       icon: 'success',
-      title: 'Feedback submitted!',
-      text: 'You will now be redirected to view and manage your feedback.',
+      title: 'Order Shipped',
+      text: 'A shipping confirmation has been sent to your email.',
       timer: 2000,
       showConfirmButton: false
     }).then(() => {
-      window.location.href = `/feedback.html?email=${encodeURIComponent(email)}&orderID=${orderID}`;
-
+      // Redirect to order history after shipping
+      window.location.href = '/orderHistory.html';
     });
-
   } catch (err) {
-    alert("❌ Error completing order: " + err.message);
+    Swal.fire("Error", err.message, "error");
     console.error(err);
   }
 }
@@ -235,6 +165,7 @@ async function completeOrder() {
 async function cancelOrder() {
   const orderID = new URLSearchParams(location.search).get("orderID");
   const email = localStorage.getItem("email");
+  if (!confirm(`Cancel order #${orderID}?`)) return;
 
   try {
     const res = await fetch(`/api/orders/${orderID}/status`, {
@@ -242,23 +173,21 @@ async function cancelOrder() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "cancelled", email })
     });
-
     const data = await res.json();
-    if (res.ok) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Order Cancelled',
-        text: 'Redirecting to homepage...',
-        timer: 2000,
-        showConfirmButton: false
-      }).then(() => {
-        window.location.href = "/home.html";
-      });
-    } else {
-      throw new Error(data.message || "Failed to cancel order.");
-    }
+    if (!res.ok) throw new Error(data.message || "Failed to cancel order.");
+
+    Swal.fire({
+      icon: 'info',
+      title: 'Order Cancelled',
+      text: 'A cancellation confirmation has been sent to your email.',
+      timer: 2000,
+      showConfirmButton: false
+    }).then(() => {
+      // Redirect to order history after cancellation
+      window.location.href = '/orderHistory.html';
+    });
   } catch (err) {
-    alert("❌ Error cancelling order: " + err.message);
+    Swal.fire("Error", err.message, "error");
     console.error(err);
   }
 }
