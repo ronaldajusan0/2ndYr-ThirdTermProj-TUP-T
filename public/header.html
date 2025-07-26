@@ -1,6 +1,6 @@
 <!-- header.html -->
 <div class="navbar">
-  <div class="logo">📦 BetlogProductApp</div>
+  <a href="home.html" class="logo">SMART PHONES</a>
   <div class="nav-links">
     <a href="home.html">🏠 Home</a>
     <a href="cart.html">🛒 Cart <span id="cart-count">(0)</span></a>
@@ -9,17 +9,18 @@
 
     <!-- Admin‐only links are hidden by default -->
     <a href="createproduct.html" id="createProductLink" style="display: none;">➕ Create Product</a>
-    <a href="viewproduct.html"    id="viewProductsLink" style="display: none;">📋 View Products</a>
-    <a href="dashboard.html"       id="dashboardLink"      style="display: none;">📊 Dashboard</a>
-    <a href="admin-users.html"     id="editUsersLink"      style="display: none;">👥 Edit Users</a>
+    <a href="viewproduct.html"    id="viewProductsLink"  style="display: none;">📋 View Products</a>
+    <a href="dashboard.html"       id="dashboardLink"     style="display: none;">📊 Dashboard</a>
+    <a href="admin-users.html"     id="editUsersLink"     style="display: none;">👥 Edit Users</a>
 
     <button class="btn-logout">Logout</button>
   </div>
 </div>
 
+<!-- jQuery first, then your script -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  // Ask for confirmation before logging out
+  // 1) Logout handler
   function logoutRequest() {
     if (!confirm('Are you sure you want to logout?')) return;
 
@@ -28,8 +29,7 @@
       localStorage.clear();
       sessionStorage.clear();
       alert('You have been logged out');
-      window.location.href = '/login.html';
-      return;
+      return window.location.href = '/login.html';
     }
 
     fetch('/api/logout', {
@@ -43,9 +43,10 @@
     .then(data => {
       localStorage.clear();
       sessionStorage.clear();
+      const name = data.user?.name || 'User';
       alert(data.success
-        ? `Goodbye ${data.user?.name || 'User'}! You have been logged out successfully`
-        : 'You have been logged out successfully');
+        ? `Goodbye ${name}! You have been logged out successfully.`
+        : 'You have been logged out successfully.');
       window.location.href = '/login.html';
     })
     .catch(() => {
@@ -56,12 +57,7 @@
     });
   }
 
-  // Attach logout handler to button
-  $(document).ready(() => {
-    $('.btn-logout').on('click', logoutRequest);
-  });
-
-  // Show admin links if role is admin
+  // 2) Show admin links if role=admin
   function showAdminLinks() {
     const role = localStorage.getItem('role') || sessionStorage.getItem('role');
     if (role === 'admin') {
@@ -69,28 +65,34 @@
         .forEach(id => $(`#${id}`).show());
     }
   }
-  $(window).on('load', () => setTimeout(showAdminLinks, 100));
 
-  // Update cart indicator
+  // 3) Fetch and update the cart count
   function updateCartIndicator() {
     const userID = localStorage.getItem('userID') || sessionStorage.getItem('userID');
     const token  = localStorage.getItem('token')  || sessionStorage.getItem('jwtToken');
-    if (!userID || !token) return $('#cart-count').text('(0)');
+    if (!userID || !token) {
+      return $('#cart-count').text('(0)');
+    }
 
     fetch(`/api/cart/${userID}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(r => r.ok ? r.json() : Promise.reject())
     .then(data => {
-      if (data.success) {
-        const count = data.items.reduce((sum,i) => sum + i.quantity, 0);
+      if (data.success && Array.isArray(data.items)) {
+        const count = data.items.reduce((sum, i) => sum + i.quantity, 0);
         $('#cart-count').text(`(${count})`);
       }
     })
     .catch(() => $('#cart-count').text('(0)'));
   }
 
-  updateCartIndicator();
+  // Initialize everything once the DOM is ready
+  $(document).ready(() => {
+    $('.btn-logout').on('click', logoutRequest);
+    showAdminLinks();
+    updateCartIndicator();
+  });
 </script>
 
 <style>

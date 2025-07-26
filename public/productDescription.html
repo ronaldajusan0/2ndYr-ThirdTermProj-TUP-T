@@ -197,17 +197,41 @@
       }
     }
 
-    function addToCart(id) {
-      let cart = JSON.parse(localStorage.getItem("cart")) || [];
-      if (!cart.find(i=>i.productID===id)) {
-        cart.push({productID:id,quantity:1});
-        localStorage.setItem("cart",JSON.stringify(cart));
-        alert("Added to cart!");
-      } else alert("Already in cart.");
+     async function addToCart(id) {
+    const userID = localStorage.getItem("userID") || sessionStorage.getItem("userID");
+    const token  = localStorage.getItem("token")  || sessionStorage.getItem("jwtToken");
+    if (!userID || !token) {
+      return alert("You must be logged in to add to cart.");
     }
-    function buyNow(id) {
-      window.location.href = `/checkout.html?id=${id}`;
+
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ userID, productID: id, quantity: 1 })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      alert(data.success ? "Product added to cart!" : "Failed to add to cart.");
+
+      // refresh the header badge
+      if (typeof updateCartIndicator === "function") {
+        updateCartIndicator();
+      }
+    } catch (err) {
+      console.error("Error adding to cart:", err);
+      alert("Error adding to cart.");
     }
+  }
+
+  function buyNow(id) {
+    window.location.href = `/checkout.html?id=${id}`;
+  }
 
     fetchProductDetails();
   </script>
